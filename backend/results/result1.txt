@@ -1,0 +1,70 @@
+Using default sample workflow (customer support workflow)
+
+
+================================================================================
+WORKFLOW ANALYZER AGENT
+================================================================================
+
+Initializing orchestrator...
+API Key: AIzaSyCRc83NA3omFx1DoDxmKynsfJMT8QnPEug
+Orchestrator initialized successfully!
+
+Input Workflow:
+--------------------------------------------------------------------------------
+
+        Step 1: Receive customer email from inbox
+        Step 2: Extract key information and parse structure
+        Step 3: Categorize request into predefined categories
+        Step 4: Query knowledge base for relevant articles
+        Step 5: Generate response draft using AI
+        Step 6: Human review and approval of response
+        Step 7: Send response email to customer
+        Step 8: Log interaction in database
+
+--------------------------------------------------------------------------------
+
+Analyzing workflow... (this may take a moment)
+
+================================================================================
+ANALYSIS RESULTS
+================================================================================
+
+Workflow ID: wf_131db136
+Session ID: 131db136-3405-41b8-ad9d-862463d72524
+Timestamp: 2025-11-17T23:06:45.587319
+Analysis Duration: 17290.36ms
+
+--- SUMMARY ---
+Total Steps: 8
+Automatable Steps: 7
+Agent-Required Steps: 7
+Human-Required Steps: 1
+Automation Potential: 87.5%
+High-Risk Steps: 1
+Critical-Risk Steps: 0
+
+--- KEY INSIGHTS ---
+
+[Insight 1] Strong Automation Potential
+  - Priority: HIGH
+  - Description: 7/8 steps (88%) can be automated
+  - Affected Steps: step_1, step_2, step_3, step_4, step_5, step_7, step_8
+
+[Insight 2] Manual Review Bottleneck
+  - Priority: MEDIUM
+  - Description: 1/8 steps (12%) require human review
+  - Affected Steps: step_6
+
+--- RECOMMENDATIONS ---
+1. Prioritize automation of 7 automatable steps
+2. Allocate resources for 1 manual review/approval step(s)
+
+--- METRICS ---
+Total Analyses: 1
+Agent 1 Latency Stats: {'count': 1, 'min': 3310.7991218566895, 'max': 3310.7991218566895, 'avg': 3310.7991218566895, 'total': 3310.7991218566895, 'median': 3310.7991218566895}
+Agent 2 Latency Stats: {'count': 1, 'min': 7109.572410583496, 'max': 7109.572410583496, 'avg': 7109.572410583496, 'total': 7109.572410583496, 'median': 7109.572410583496}
+Agent 3 Latency Stats: {'count': 1, 'min': 6869.462728500366, 'max': 6869.462728500366, 'avg': 6869.462728500366, 'total': 6869.462728500366, 'median': 6869.462728500366}
+
+================================================================================
+ANALYSIS COMPLETED SUCCESSFULLY
+================================================================================

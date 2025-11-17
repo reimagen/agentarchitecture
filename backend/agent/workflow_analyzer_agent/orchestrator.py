@@ -1,13 +1,20 @@
 """Main orchestrator for workflow analysis - coordinates all agents."""
 import asyncio
 import json
+import os
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
+from dotenv import load_dotenv
+
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
 except ImportError:
     genai = None
+
+# Load environment variables from .env file
+load_dotenv()
 
 from .session import SessionState, SessionManager
 from .observability import StructuredLogger, DistributedTracer, MetricsCollector
@@ -35,8 +42,9 @@ class WorkflowAnalyzerOrchestrator:
         """
         if genai is None:
             raise ImportError("google-generativeai not installed")
-
-        self.client = genai.Client()
+        my_api_key = os.getenv("GEMINI_AI_API")
+        print(f"API Key: {my_api_key}")
+        self.client = genai.Client(api_key=my_api_key)
         self.model = model
 
         # Initialize core components
@@ -326,7 +334,7 @@ class WorkflowAnalyzerOrchestrator:
 
         return insights[:5]
 
-    def _generate_recommendations(self, summary: AutomationSummary, steps: List[WorkflowStep]) -> List[str]:
+    def _generate_recommendations(self, summary: AutomationSummary, steps: List[Dict[str, Any]]) -> List[str]:
         """Generate actionable recommendations."""
         recommendations = []
 
