@@ -12,6 +12,14 @@ class WorkflowStep(BaseModel):
     outputs: List[str] = Field(default_factory=list)
     dependencies: List[str] = Field(default_factory=list)
     agent_type: Optional[str] = None
+    risk_level: Optional[str] = None
+    requires_human_review: bool = False
+    determinism_score: float = 0.0
+    automation_feasibility: float = 0.0
+    available_api: Optional[str] = None
+    suggested_tools: List[str] = Field(default_factory=list)
+    mitigation_suggestions: List[str] = Field(default_factory=list)
+    implementation_notes: Optional[str] = None
     execution_order: Optional[int] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
