@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 
 from dotenv import load_dotenv
 
+from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
 # Load environment variables from .env file
@@ -44,6 +45,17 @@ class WorkflowAnalyzerOrchestrator:
         self.gemini_model = Gemini(model_name=model, api_key=my_api_key)
         # Use the underlying API client (google.genai.Client-compatible)
         self.client = self.gemini_model.api_client
+        # Define a root ADK Agent for metadata and future orchestration
+        self.root_agent = Agent(
+            name="workflow_analysis_root",
+            description="Root agent that orchestrates workflow parsing, risk, and automation analysis.",
+            model=self.gemini_model,
+            instruction=(
+                "You analyze business workflows by coordinating parsing, "
+                "risk assessment, and automation analysis steps."
+            ),
+            tools=[get_compliance_rules, lookup_api_docs],
+        )
         self.model = model
 
         # Initialize core components
