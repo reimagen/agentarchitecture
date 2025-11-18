@@ -7,11 +7,7 @@ from typing import Dict, Any, List, Optional
 
 from dotenv import load_dotenv
 
-try:
-    from google import genai
-    from google.genai import types
-except ImportError:
-    genai = None
+from google.adk.models.google_llm import Gemini
 
 # Load environment variables from .env file
 load_dotenv()
@@ -40,11 +36,14 @@ class WorkflowAnalyzerOrchestrator:
         Args:
             model: Gemini model to use (default: from config)
         """
-        if genai is None:
-            raise ImportError("google-generativeai not installed")
-        my_api_key = os.getenv("GEMINI_AI_API")
-        print(f"API Key: {my_api_key}")
-        self.client = genai.Client(api_key=my_api_key)
+        my_api_key = os.getenv("GOOGLE_API_KEY")
+        if not my_api_key:
+            raise RuntimeError("GOOGLE_API_KEY environment variable is not set")
+
+        # Initialize ADK Gemini model and underlying Google GenAI client
+        self.gemini_model = Gemini(model_name=model, api_key=my_api_key)
+        # Use the underlying API client (google.genai.Client-compatible)
+        self.client = self.gemini_model.api_client
         self.model = model
 
         # Initialize core components
@@ -53,7 +52,7 @@ class WorkflowAnalyzerOrchestrator:
         self.tracer = DistributedTracer()
         self.metrics = MetricsCollector()
 
-        # Initialize agents
+        # Initialize agents with the underlying GenAI-compatible client
         self.agent1 = WorkflowParserAgent(self.client, self.logger, self.tracer)
 
         tools = {

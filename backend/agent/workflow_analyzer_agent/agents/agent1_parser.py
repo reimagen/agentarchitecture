@@ -15,7 +15,7 @@ class WorkflowParserAgent:
     into individual steps with identified dependencies, inputs, and outputs.
 
     Attributes:
-        client: Gemini API client
+        client: Gemini API client (google.genai.Client-compatible)
         logger: StructuredLogger instance for JSON logging
         tracer: DistributedTracer instance for distributed tracing
         model: Model to use (default: gemini-2.0-flash-exp)
@@ -26,7 +26,7 @@ class WorkflowParserAgent:
         Initialize the Workflow Parser Agent.
 
         Args:
-            client: Gemini API client
+            client: Gemini API client (google.genai.Client-compatible)
             logger: StructuredLogger instance
             tracer: DistributedTracer instance
         """
@@ -71,7 +71,7 @@ class WorkflowParserAgent:
 
 Remember to respond with ONLY valid JSON, no markdown or explanations."""
 
-            # Call Gemini API with JSON response type
+            # Call Gemini API client with JSON response type
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=[
@@ -79,13 +79,13 @@ Remember to respond with ONLY valid JSON, no markdown or explanations."""
                         "role": "user",
                         "parts": [
                             {"text": AGENT1_SYSTEM_PROMPT},
-                            {"text": user_prompt}
-                        ]
+                            {"text": user_prompt},
+                        ],
                     }
                 ],
                 config={
-                    "response_mime_type": "application/json"
-                }
+                    "response_mime_type": "application/json",
+                },
             )
 
             # Extract and parse response
