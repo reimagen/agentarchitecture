@@ -27,3 +27,5 @@ env/
 *.swo
 .idea/
 .vscode/
+
+firebase-service-account.json
