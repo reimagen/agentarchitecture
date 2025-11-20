@@ -62,16 +62,16 @@ async def main():
         # Step-by-step breakdown
         print(f"\n--- STEPS BREAKDOWN ---")
         for i, step in enumerate(result.steps, 1):
-            print(f"\n[Step {i}] {step['id']}: {step['description']}")
-            print(f"  - Agent Type: {step['agent_type']}")
-            print(f"  - Risk Level: {step['risk_level']}")
-            print(f"  - Automation Feasibility: {step['automation_feasibility']:.1%}")
-            print(f"  - Determinism Score: {step['determinism_score']:.1%}")
-            if step['available_api']:
-                print(f"  - Available API: {step['available_api']}")
-            if step['suggested_tools']:
-                print(f"  - Suggested Tools: {', '.join(step['suggested_tools'])}")
-            if step['requires_human_review']:
+            print(f"\n[Step {i}] {step.id}: {step.description}")
+            print(f"  - Agent Type: {step.agent_type}")
+            print(f"  - Risk Level: {step.risk_level}")
+            print(f"  - Automation Feasibility: {step.automation_feasibility:.1%}")
+            print(f"  - Determinism Score: {step.determinism_score:.1%}")
+            if step.available_api:
+                print(f"  - Available API: {step.available_api}")
+            if step.suggested_tools:
+                print(f"  - Suggested Tools: {', '.join(step.suggested_tools)}")
+            if step.requires_human_review:
                 print(f"  - Human Review Required: YES")
 
         # Key insights

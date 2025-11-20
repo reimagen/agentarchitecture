@@ -1,0 +1,430 @@
+{
+  "workflow_id": "wf_2232bc88",
+  "agents": [
+    {
+      "id": "agent_step_1",
+      "name": "Agent for step_1",
+      "description": "Receive customer email from inbox",
+      "mode": "TOOL_ONLY",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_1"
+      ],
+      "tool_ids": [
+        "api::Gmail API",
+        "tool::Gmail API"
+      ],
+      "input_schema": {
+        "inputs": [
+          "customer email"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "email received"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "TOOL",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 1.0,
+        "determinism_score": 1.0,
+        "implementation_notes": "Use filters to target specific customer emails."
+      }
+    },
+    {
+      "id": "agent_step_2",
+      "name": "Agent for step_2",
+      "description": "Extract key information and parse structure",
+      "mode": "LLM_WITH_TOOLS",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_2"
+      ],
+      "tool_ids": [
+        "tool::Custom Integration"
+      ],
+      "input_schema": {
+        "inputs": [
+          "email received"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "extracted information",
+          "parsed structure"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "agentic_rag",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 0.8,
+        "determinism_score": 0.7,
+        "implementation_notes": "Consider using named entity recognition and regular expressions for parsing."
+      }
+    },
+    {
+      "id": "agent_step_3",
+      "name": "Agent for step_3",
+      "description": "Categorize request into predefined categories",
+      "mode": "TOOL_ONLY",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_3"
+      ],
+      "tool_ids": [
+        "api::HTTP API",
+        "tool::HTTP API"
+      ],
+      "input_schema": {
+        "inputs": [
+          "extracted information"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "request category"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "adk_base",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 0.9,
+        "determinism_score": 0.9,
+        "implementation_notes": "Maintain a well-defined categorization schema."
+      }
+    },
+    {
+      "id": "agent_step_4",
+      "name": "Agent for step_4",
+      "description": "Query knowledge base for relevant articles",
+      "mode": "TOOL_ONLY",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_4"
+      ],
+      "tool_ids": [
+        "api::Knowledge Base API",
+        "tool::Knowledge Base API"
+      ],
+      "input_schema": {
+        "inputs": [
+          "request category"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "relevant articles"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "TOOL",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 1.0,
+        "determinism_score": 1.0,
+        "implementation_notes": "Implement appropriate error handling if no articles are found."
+      }
+    },
+    {
+      "id": "agent_step_5",
+      "name": "Agent for step_5",
+      "description": "Generate response draft using AI",
+      "mode": "LLM_WITH_TOOLS",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_5"
+      ],
+      "tool_ids": [
+        "tool::Custom Integration"
+      ],
+      "input_schema": {
+        "inputs": [
+          "relevant articles",
+          "request category",
+          "extracted information"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "response draft"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "agentic_rag",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 0.7,
+        "determinism_score": 0.6,
+        "implementation_notes": "Prompt engineering is crucial for response quality. Implement a system for monitoring the quality of responses."
+      }
+    },
+    {
+      "id": "agent_step_6",
+      "name": "Agent for step_6",
+      "description": "Human review and approval of response",
+      "mode": "HUMAN",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_6"
+      ],
+      "tool_ids": [],
+      "input_schema": {
+        "inputs": [
+          "response draft"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "approved response"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "HUMAN",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 0.3,
+        "determinism_score": 1.0,
+        "implementation_notes": "Route response drafts to human reviewers with clear guidelines."
+      }
+    },
+    {
+      "id": "agent_step_7",
+      "name": "Agent for step_7",
+      "description": "Send response email to customer",
+      "mode": "TOOL_ONLY",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_7"
+      ],
+      "tool_ids": [
+        "api::Gmail API",
+        "tool::Gmail API"
+      ],
+      "input_schema": {
+        "inputs": [
+          "approved response"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "confirmation of sent email"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "TOOL",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 1.0,
+        "determinism_score": 1.0,
+        "implementation_notes": "Ensure proper authentication and authorization."
+      }
+    },
+    {
+      "id": "agent_step_8",
+      "name": "Agent for step_8",
+      "description": "Log interaction in database",
+      "mode": "TOOL_ONLY",
+      "capabilities": [],
+      "data_domains": [],
+      "step_ids": [
+        "step_8"
+      ],
+      "tool_ids": [
+        "api::SQL API",
+        "tool::SQL API"
+      ],
+      "input_schema": {
+        "inputs": [
+          "extracted information",
+          "request category",
+          "approved response",
+          "confirmation of sent email"
+        ]
+      },
+      "output_schema": {
+        "outputs": [
+          "database log"
+        ]
+      },
+      "safety_constraints": {
+        "requires_human_approval": false,
+        "restricts_pii": false,
+        "max_cost_usd": null,
+        "max_latency_ms": null,
+        "notes": null,
+        "extra": {}
+      },
+      "metadata": {
+        "agent_type": "TOOL",
+        "risk_level": "UNKNOWN",
+        "automation_feasibility": 1.0,
+        "determinism_score": 1.0,
+        "implementation_notes": "Implement proper data validation and sanitization."
+      }
+    }
+  ],
+  "connections": [
+    {
+      "from_agent_id": "agent_step_1",
+      "to_agent_id": "agent_step_2",
+      "description": "Output of step_1 feeds into step_2",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_2",
+      "to_agent_id": "agent_step_3",
+      "description": "Output of step_2 feeds into step_3",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_3",
+      "to_agent_id": "agent_step_4",
+      "description": "Output of step_3 feeds into step_4",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_4",
+      "to_agent_id": "agent_step_5",
+      "description": "Output of step_4 feeds into step_5",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_5",
+      "to_agent_id": "agent_step_6",
+      "description": "Output of step_5 feeds into step_6",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_6",
+      "to_agent_id": "agent_step_7",
+      "description": "Output of step_6 feeds into step_7",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_7",
+      "to_agent_id": "agent_step_8",
+      "description": "Output of step_7 feeds into step_8",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_3",
+      "to_agent_id": "agent_step_8",
+      "description": "Output of step_3 feeds into step_8",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_6",
+      "to_agent_id": "agent_step_8",
+      "description": "Output of step_6 feeds into step_8",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    },
+    {
+      "from_agent_id": "agent_step_2",
+      "to_agent_id": "agent_step_8",
+      "description": "Output of step_2 feeds into step_8",
+      "payload_schema": {
+        "type": "workflow_step_output"
+      },
+      "channel": "request_response"
+    }
+  ],
+  "created_from_analysis_id": "2232bc88-f1c6-487c-91ca-1c76b8c80e2f",
+  "metadata": {
+    "summary": {
+      "total_steps": 8,
+      "automatable_count": 7,
+      "agent_required_count": 7,
+      "human_required_count": 1,
+      "automation_potential": 0.875,
+      "high_risk_steps": 0,
+      "critical_risk_steps": 0
+    }
+  }
+}

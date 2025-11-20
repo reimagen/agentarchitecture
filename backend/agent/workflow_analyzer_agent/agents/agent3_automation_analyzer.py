@@ -14,7 +14,7 @@ class AutomationAnalyzerAgent:
     for each step. It can call tools to look up available APIs.
 
     Attributes:
-        client: Gemini API client
+        client: Gemini API client (google.genai.Client-compatible)
         logger: StructuredLogger instance for JSON logging
         tracer: DistributedTracer instance for distributed tracing
         tools: Dictionary containing available tools (lookup_api_docs)
@@ -26,7 +26,7 @@ class AutomationAnalyzerAgent:
         Initialize the Automation Analyzer Agent.
 
         Args:
-            client: Gemini API client
+            client: Gemini API client (google.genai.Client-compatible)
             logger: StructuredLogger instance
             tracer: DistributedTracer instance
             tools: Dictionary with tool functions (e.g., lookup_api_docs)
@@ -104,7 +104,7 @@ For each step:
 
 Respond with ONLY valid JSON, no markdown or explanations."""
 
-            # Call Gemini API with JSON response type
+            # Call Gemini API client with JSON response type
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=[
@@ -112,13 +112,13 @@ Respond with ONLY valid JSON, no markdown or explanations."""
                         "role": "user",
                         "parts": [
                             {"text": AGENT3_SYSTEM_PROMPT},
-                            {"text": user_prompt}
-                        ]
+                            {"text": user_prompt},
+                        ],
                     }
                 ],
                 config={
-                    "response_mime_type": "application/json"
-                }
+                    "response_mime_type": "application/json",
+                },
             )
 
             # Extract and parse response

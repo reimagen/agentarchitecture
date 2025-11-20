@@ -14,7 +14,7 @@ class RiskAssessorAgent:
     compliance requirements. It can call tools to look up compliance rules.
 
     Attributes:
-        client: Gemini API client
+        client: Gemini API client (google.genai.Client-compatible)
         logger: StructuredLogger instance for JSON logging
         tracer: DistributedTracer instance for distributed tracing
         tools: Dictionary containing available tools (get_compliance_rules)
@@ -26,7 +26,7 @@ class RiskAssessorAgent:
         Initialize the Risk Assessor Agent.
 
         Args:
-            client: Gemini API client
+            client: Gemini API client (google.genai.Client-compatible)
             logger: StructuredLogger instance
             tracer: DistributedTracer instance
             tools: Dictionary with tool functions (e.g., get_compliance_rules)
@@ -94,7 +94,7 @@ For each step:
 
 Respond with ONLY valid JSON, no markdown or explanations."""
 
-            # Call Gemini API with JSON response type
+            # Call Gemini API client with JSON response type
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=[
@@ -102,13 +102,13 @@ Respond with ONLY valid JSON, no markdown or explanations."""
                         "role": "user",
                         "parts": [
                             {"text": AGENT2_SYSTEM_PROMPT},
-                            {"text": user_prompt}
-                        ]
+                            {"text": user_prompt},
+                        ],
                     }
                 ],
                 config={
-                    "response_mime_type": "application/json"
-                }
+                    "response_mime_type": "application/json",
+                },
             )
 
             # Extract and parse response

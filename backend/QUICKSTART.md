@@ -246,6 +246,9 @@ backend/
 3. Try different workflows with `--workflow` or `--file`
 4. Check metrics with detailed analysis
 5. Integrate with your own workflow data
+6. After you are satisfied with the scoring table / JSON analysis, use the org design module to generate an agent org chart and registries:
+   - In code, call `run_org_design_for_analysis(analysis: WorkflowAnalysis)` from `backend.agent.org_design`
+   - This produces an `AgentOrgChart`, `AgentRegistry`, and `ToolRegistry` for the analyzed workflow
 
 ## System Architecture
 

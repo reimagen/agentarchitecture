@@ -7,11 +7,8 @@ from typing import Dict, Any, List, Optional
 
 from dotenv import load_dotenv
 
-try:
-    from google import genai
-    from google.genai import types
-except ImportError:
-    genai = None
+from google.adk.agents import Agent
+from google.adk.models.google_llm import Gemini
 
 # Load environment variables from .env file
 load_dotenv()
@@ -33,18 +30,33 @@ class WorkflowAnalyzerOrchestrator:
     2. Agent 2 & 3 (Parallel): Risk assessment and automation analysis
     """
 
-    def __init__(self, model: str = MODEL):
+    def __init__(self, model: str = MODEL, workflow_repository=None):
         """
         Initialize orchestrator with all components.
 
         Args:
             model: Gemini model to use (default: from config)
+            workflow_repository: Optional WorkflowRepository for auto-saving analysis
         """
-        if genai is None:
-            raise ImportError("google-generativeai not installed")
-        my_api_key = os.getenv("GEMINI_AI_API")
-        print(f"API Key: {my_api_key}")
-        self.client = genai.Client(api_key=my_api_key)
+        my_api_key = os.getenv("GOOGLE_API_KEY")
+        if not my_api_key:
+            raise RuntimeError("GOOGLE_API_KEY environment variable is not set")
+
+        # Initialize ADK Gemini model and underlying Google GenAI client
+        self.gemini_model = Gemini(model_name=model, api_key=my_api_key)
+        # Use the underlying API client (google.genai.Client-compatible)
+        self.client = self.gemini_model.api_client
+        # Define a root ADK Agent for metadata and future orchestration
+        self.root_agent = Agent(
+            name="workflow_analysis_root",
+            description="Root agent that orchestrates workflow parsing, risk, and automation analysis.",
+            model=self.gemini_model,
+            instruction=(
+                "You analyze business workflows by coordinating parsing, "
+                "risk assessment, and automation analysis steps."
+            ),
+            tools=[get_compliance_rules, lookup_api_docs],
+        )
         self.model = model
 
         # Initialize core components
@@ -53,7 +65,7 @@ class WorkflowAnalyzerOrchestrator:
         self.tracer = DistributedTracer()
         self.metrics = MetricsCollector()
 
-        # Initialize agents
+        # Initialize agents with the underlying GenAI-compatible client
         self.agent1 = WorkflowParserAgent(self.client, self.logger, self.tracer)
 
         tools = {
@@ -63,6 +75,9 @@ class WorkflowAnalyzerOrchestrator:
 
         self.agent2 = RiskAssessorAgent(self.client, self.logger, self.tracer, tools)
         self.agent3 = AutomationAnalyzerAgent(self.client, self.logger, self.tracer, tools)
+
+        # Optional workflow repository for auto-saving
+        self.workflow_repository = workflow_repository
 
         self.logger.info("Orchestrator initialized successfully")
 
@@ -133,6 +148,27 @@ class WorkflowAnalyzerOrchestrator:
             # Merge results
             final_analysis = self._merge_results(session)
             session.final_analysis = final_analysis.dict()
+
+            # Auto-save to Firestore if repository is available
+            if self.workflow_repository:
+                try:
+                    self.workflow_repository.save_workflow_analysis(
+                        workflow_id=final_analysis.workflow_id,
+                        original_text=workflow_text,
+                        analysis=final_analysis,
+                    )
+                    self.logger.info(
+                        "Analysis saved successfully to Firestore",
+                        trace_id=trace_id,
+                        workflow_id=final_analysis.workflow_id,
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to persist analysis to Firestore",
+                        trace_id=trace_id,
+                        error_type=type(e).__name__,
+                        error_message=str(e),
+                    )
 
             # Collect metrics
             self.metrics.record_analysis(session)

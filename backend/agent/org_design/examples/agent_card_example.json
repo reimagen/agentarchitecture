@@ -1,0 +1,48 @@
+{
+  "id": "agent_step_5",
+  "name": "Agent for step_5",
+  "description": "Generate response draft using AI",
+  "mode": "LLM_WITH_TOOLS",
+  "capabilities": [
+    "draft_customer_response",
+    "summarize_relevant_articles",
+    "adapt_tone_to_customer_profile"
+  ],
+  "data_domains": [
+    "CustomerSupport"
+  ],
+  "step_ids": [
+    "step_5"
+  ],
+  "tool_ids": [
+    "tool::Custom Integration"
+  ],
+  "input_schema": {
+    "inputs": [
+      "relevant articles",
+      "request category",
+      "extracted information"
+    ]
+  },
+  "output_schema": {
+    "outputs": [
+      "response draft"
+    ]
+  },
+  "safety_constraints": {
+    "requires_human_approval": false,
+    "restricts_pii": false,
+    "max_cost_usd": null,
+    "max_latency_ms": null,
+    "notes": "Monitor quality of generated responses and add human review for sensitive categories.",
+    "extra": {}
+  },
+  "metadata": {
+    "agent_type": "agentic_rag",
+    "risk_level": "UNKNOWN",
+    "automation_feasibility": 0.7,
+    "determinism_score": 0.6,
+    "implementation_notes": "Prompt engineering is crucial for response quality. Implement a system for monitoring the quality of responses."
+  }
+}
+

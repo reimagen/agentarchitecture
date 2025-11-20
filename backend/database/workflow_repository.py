@@ -1,0 +1,422 @@
+"""Firestore repository for workflow storage and retrieval."""
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from dotenv import load_dotenv
+
+# Add backend to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from agent.workflow_analyzer_agent.types import WorkflowAnalysis
+from agent.org_design.types import AgentOrgChart
+from database.exceptions import (
+    WorkflowNotFoundError,
+    InvalidApprovalStateError,
+    FirestoreError,
+    SerializationError,
+)
+from database.firebase_client import FirebaseClient
+
+load_dotenv()
+
+
+class WorkflowRepository:
+    """Repository for managing workflow documents in Firestore."""
+
+    def __init__(self):
+        """Initialize repository with Firestore client."""
+        self.db = FirebaseClient.get_db()
+        self.collection_name = os.getenv("FIREBASE_COLLECTION_WORKFLOWS", "workflows")
+
+    def save_workflow_analysis(
+        self,
+        workflow_id: str,
+        original_text: str,
+        analysis: WorkflowAnalysis,
+    ) -> None:
+        """
+        Save workflow analysis to Firestore.
+
+        Args:
+            workflow_id: Unique workflow identifier
+            original_text: Raw workflow text input
+            analysis: WorkflowAnalysis Pydantic model
+
+        Raises:
+            SerializationError: If serialization fails
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            # Serialize analysis to dict
+            analysis_dict = analysis.model_dump() if hasattr(analysis, "model_dump") else analysis.dict()
+
+            now = datetime.utcnow().isoformat() + "Z"
+
+            # Check if document exists to preserve createdAt
+            doc_ref = self.db.collection(self.collection_name).document(workflow_id)
+            doc = doc_ref.get()
+
+            document_data = {
+                "originalText": original_text,
+                "analysis": analysis_dict,
+                "approvalStatus": "PENDING",
+                "approvedBy": None,
+                "approvedAt": None,
+                "createdBy": "generic_user",
+                "createdAt": doc.get("createdAt") if doc.exists else now,
+                "updatedAt": now,
+                "sessionId": analysis.session_id,
+                "metadata": {
+                    "notes": "",
+                    "tags": [],
+                    "version": 1,
+                },
+                "orgChart": None,
+                "agentRegistry": None,
+                "toolRegistry": None,
+            }
+
+            doc_ref.set(document_data, merge=True)
+
+        except SerializationError as e:
+            raise SerializationError(f"Failed to serialize WorkflowAnalysis: {e}")
+        except Exception as e:
+            raise FirestoreError(f"Failed to save workflow analysis: {e}")
+
+    def get_workflow_analysis(self, workflow_id: str) -> Optional[WorkflowAnalysis]:
+        """
+        Retrieve workflow analysis from Firestore.
+
+        Args:
+            workflow_id: Unique workflow identifier
+
+        Returns:
+            WorkflowAnalysis object or None if not found
+
+        Raises:
+            FirestoreError: If Firestore operation fails
+            SerializationError: If deserialization fails
+        """
+        try:
+            doc = self.db.collection(self.collection_name).document(workflow_id).get()
+
+            if not doc.exists:
+                return None
+
+            analysis_data = doc.get("analysis")
+            if not analysis_data:
+                return None
+
+            # Deserialize to WorkflowAnalysis
+            return WorkflowAnalysis(**analysis_data)
+
+        except Exception as e:
+            raise FirestoreError(f"Failed to retrieve workflow analysis: {e}")
+
+    def get_approval_status(self, workflow_id: str) -> Optional[str]:
+        """
+        Get approval status of a workflow.
+
+        Args:
+            workflow_id: Unique workflow identifier
+
+        Returns:
+            "PENDING" | "APPROVED" | "REJECTED" | None if not found
+
+        Raises:
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            doc = self.db.collection(self.collection_name).document(workflow_id).get(
+                field_paths=["approvalStatus"]
+            )
+
+            if not doc.exists:
+                return None
+
+            return doc.get("approvalStatus")
+
+        except Exception as e:
+            raise FirestoreError(f"Failed to retrieve approval status: {e}")
+
+    def approve_workflow(self, workflow_id: str, approved_by: str) -> Dict[str, Any]:
+        """
+        Approve a workflow and trigger org design synthesis.
+
+        Args:
+            workflow_id: Unique workflow identifier
+            approved_by: User identifier approving the workflow
+
+        Returns:
+            Updated workflow document
+
+        Raises:
+            WorkflowNotFoundError: If workflow doesn't exist
+            InvalidApprovalStateError: If workflow is not in PENDING state
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            doc_ref = self.db.collection(self.collection_name).document(workflow_id)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
+
+            current_status = doc.get("approvalStatus")
+            if current_status != "PENDING":
+                raise InvalidApprovalStateError(
+                    f"Workflow {workflow_id} is not in PENDING state. "
+                    f"Current status: {current_status}"
+                )
+
+            now = datetime.utcnow().isoformat() + "Z"
+
+            # Update approval status in Firestore
+            doc_ref.update({
+                "approvalStatus": "APPROVED",
+                "approvedBy": approved_by,
+                "approvedAt": now,
+                "updatedAt": now,
+            })
+
+            # Auto-trigger org design synthesis
+            self._trigger_org_design_synthesis(workflow_id)
+
+            # Retrieve and return updated document
+            updated_doc = doc_ref.get()
+            return updated_doc.to_dict()
+
+        except (WorkflowNotFoundError, InvalidApprovalStateError):
+            raise
+        except Exception as e:
+            raise FirestoreError(f"Failed to approve workflow: {e}")
+
+    def save_org_chart(
+        self,
+        workflow_id: str,
+        org_chart: AgentOrgChart,
+        agent_registry: Dict[str, Any],
+        tool_registry: Dict[str, Any],
+    ) -> None:
+        """
+        Save org chart and registries to Firestore.
+
+        Args:
+            workflow_id: Unique workflow identifier
+            org_chart: AgentOrgChart Pydantic model
+            agent_registry: Agent registry dictionary
+            tool_registry: Tool registry dictionary
+
+        Raises:
+            WorkflowNotFoundError: If workflow document doesn't exist
+            SerializationError: If serialization fails
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            doc_ref = self.db.collection(self.collection_name).document(workflow_id)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
+
+            # Serialize org chart
+            org_chart_dict = (
+                org_chart.model_dump() if hasattr(org_chart, "model_dump") else org_chart.dict()
+            )
+
+            now = datetime.utcnow().isoformat() + "Z"
+
+            # Update with org chart and registries
+            doc_ref.update({
+                "orgChart": org_chart_dict,
+                "agentRegistry": agent_registry,
+                "toolRegistry": tool_registry,
+                "updatedAt": now,
+            })
+
+        except WorkflowNotFoundError:
+            raise
+        except SerializationError as e:
+            raise SerializationError(f"Failed to serialize org chart: {e}")
+        except Exception as e:
+            raise FirestoreError(f"Failed to save org chart: {e}")
+
+    def get_org_chart(self, workflow_id: str) -> Optional[AgentOrgChart]:
+        """
+        Retrieve org chart from Firestore.
+
+        Args:
+            workflow_id: Unique workflow identifier
+
+        Returns:
+            AgentOrgChart object or None if not found or null
+
+        Raises:
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            doc = self.db.collection(self.collection_name).document(workflow_id).get()
+
+            if not doc.exists:
+                return None
+
+            org_chart_data = doc.get("orgChart")
+            if not org_chart_data:
+                return None
+
+            # Deserialize to AgentOrgChart
+            return AgentOrgChart(**org_chart_data)
+
+        except Exception as e:
+            raise FirestoreError(f"Failed to retrieve org chart: {e}")
+
+    def list_workflows(
+        self,
+        approval_status: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """
+        List workflows with optional filtering.
+
+        Args:
+            approval_status: Filter by approval status (PENDING|APPROVED|REJECTED)
+            limit: Maximum number of results to return
+
+        Returns:
+            List of workflow metadata dictionaries
+
+        Raises:
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            query = self.db.collection(self.collection_name)
+
+            # Apply status filter if provided
+            if approval_status:
+                query = query.where("approvalStatus", "==", approval_status)
+
+            # Order by creation date (newest first)
+            query = query.order_by("createdAt", direction="DESCENDING")
+
+            # Limit results
+            query = query.limit(limit)
+
+            # Execute query
+            docs = query.stream()
+
+            results = []
+            for doc in docs:
+                data = doc.to_dict()
+                results.append({
+                    "workflow_id": doc.id,
+                    "approvalStatus": data.get("approvalStatus"),
+                    "createdAt": data.get("createdAt"),
+                    "updatedAt": data.get("updatedAt"),
+                    "createdBy": data.get("createdBy"),
+                })
+
+            return results
+
+        except Exception as e:
+            raise FirestoreError(f"Failed to list workflows: {e}")
+
+    def get_workflow_full(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve complete workflow document.
+
+        Args:
+            workflow_id: Unique workflow identifier
+
+        Returns:
+            Complete workflow document or None if not found
+
+        Raises:
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            doc = self.db.collection(self.collection_name).document(workflow_id).get()
+
+            if not doc.exists:
+                return None
+
+            return doc.to_dict()
+
+        except Exception as e:
+            raise FirestoreError(f"Failed to retrieve workflow: {e}")
+
+    def delete_workflow(self, workflow_id: str, soft_delete: bool = True) -> bool:
+        """
+        Delete a workflow (soft or hard delete).
+
+        Args:
+            workflow_id: Unique workflow identifier
+            soft_delete: If True, soft delete (set deletedAt). If False, hard delete.
+
+        Returns:
+            True if deleted successfully
+
+        Raises:
+            WorkflowNotFoundError: If workflow doesn't exist
+            FirestoreError: If Firestore operation fails
+        """
+        try:
+            doc_ref = self.db.collection(self.collection_name).document(workflow_id)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
+
+            if soft_delete:
+                # Soft delete: set deletedAt timestamp
+                now = datetime.utcnow().isoformat() + "Z"
+                doc_ref.update({"deletedAt": now})
+            else:
+                # Hard delete: remove document
+                doc_ref.delete()
+
+            return True
+
+        except WorkflowNotFoundError:
+            raise
+        except Exception as e:
+            raise FirestoreError(f"Failed to delete workflow: {e}")
+
+    def _trigger_org_design_synthesis(self, workflow_id: str) -> None:
+        """
+        Trigger org design synthesis after approval.
+
+        This method is called automatically after a workflow is approved.
+        It retrieves the analysis and runs org design synthesis.
+
+        Args:
+            workflow_id: Unique workflow identifier
+
+        Note:
+            - Org design synthesis errors are logged but don't fail the approval
+            - Synthesis result is auto-saved to Firestore via save_org_chart()
+        """
+        try:
+            # Import here to avoid circular imports
+            from backend.agent.org_design.service import run_org_design_for_analysis
+
+            # Retrieve the approved workflow analysis
+            analysis = self.get_workflow_analysis(workflow_id)
+            if not analysis:
+                print(f"Warning: Could not retrieve analysis for workflow {workflow_id}")
+                return
+
+            # Run org design synthesis
+            org_chart, agent_registry, tool_registry = run_org_design_for_analysis(
+                analysis=analysis,
+                workflow_repository=self,
+            )
+
+            # org chart auto-saves inside run_org_design_for_analysis()
+            print(f"✓ Org design synthesis completed for workflow {workflow_id}")
+
+        except Exception as e:
+            # Log error but don't block approval
+            print(f"Warning: Org design synthesis failed for workflow {workflow_id}: {e}")

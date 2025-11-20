@@ -1,0 +1,263 @@
+{
+  "workflow_id": "wf_2232bc88",
+  "session_id": "2232bc88-f1c6-487c-91ca-1c76b8c80e2f",
+  "steps": [
+    {
+      "id": "step_1",
+      "description": "Receive customer email from inbox",
+      "inputs": [
+        "customer email"
+      ],
+      "outputs": [
+        "email received"
+      ],
+      "dependencies": [],
+      "agent_type": "TOOL",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 1.0,
+      "automation_feasibility": 1.0,
+      "available_api": "Gmail API",
+      "suggested_tools": [
+        "Gmail API"
+      ],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Use filters to target specific customer emails.",
+      "execution_order": null,
+      "metadata": {}
+    },
+    {
+      "id": "step_2",
+      "description": "Extract key information and parse structure",
+      "inputs": [
+        "email received"
+      ],
+      "outputs": [
+        "extracted information",
+        "parsed structure"
+      ],
+      "dependencies": [
+        "step_1"
+      ],
+      "agent_type": "agentic_rag",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 0.7,
+      "automation_feasibility": 0.8,
+      "available_api": null,
+      "suggested_tools": [
+        "Custom Integration"
+      ],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Consider using named entity recognition and regular expressions for parsing.",
+      "execution_order": null,
+      "metadata": {}
+    },
+    {
+      "id": "step_3",
+      "description": "Categorize request into predefined categories",
+      "inputs": [
+        "extracted information"
+      ],
+      "outputs": [
+        "request category"
+      ],
+      "dependencies": [
+        "step_2"
+      ],
+      "agent_type": "adk_base",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 0.9,
+      "automation_feasibility": 0.9,
+      "available_api": "HTTP API",
+      "suggested_tools": [
+        "HTTP API"
+      ],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Maintain a well-defined categorization schema.",
+      "execution_order": null,
+      "metadata": {}
+    },
+    {
+      "id": "step_4",
+      "description": "Query knowledge base for relevant articles",
+      "inputs": [
+        "request category"
+      ],
+      "outputs": [
+        "relevant articles"
+      ],
+      "dependencies": [
+        "step_3"
+      ],
+      "agent_type": "TOOL",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 1.0,
+      "automation_feasibility": 1.0,
+      "available_api": "Knowledge Base API",
+      "suggested_tools": [
+        "Knowledge Base API"
+      ],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Implement appropriate error handling if no articles are found.",
+      "execution_order": null,
+      "metadata": {}
+    },
+    {
+      "id": "step_5",
+      "description": "Generate response draft using AI",
+      "inputs": [
+        "relevant articles",
+        "request category",
+        "extracted information"
+      ],
+      "outputs": [
+        "response draft"
+      ],
+      "dependencies": [
+        "step_4"
+      ],
+      "agent_type": "agentic_rag",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 0.6,
+      "automation_feasibility": 0.7,
+      "available_api": null,
+      "suggested_tools": [
+        "Custom Integration"
+      ],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Prompt engineering is crucial for response quality. Implement a system for monitoring the quality of responses.",
+      "execution_order": null,
+      "metadata": {}
+    },
+    {
+      "id": "step_6",
+      "description": "Human review and approval of response",
+      "inputs": [
+        "response draft"
+      ],
+      "outputs": [
+        "approved response"
+      ],
+      "dependencies": [
+        "step_5"
+      ],
+      "agent_type": "HUMAN",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 1.0,
+      "automation_feasibility": 0.3,
+      "available_api": null,
+      "suggested_tools": [],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Route response drafts to human reviewers with clear guidelines.",
+      "execution_order": null,
+      "metadata": {}
+    },
+    {
+      "id": "step_7",
+      "description": "Send response email to customer",
+      "inputs": [
+        "approved response"
+      ],
+      "outputs": [
+        "confirmation of sent email"
+      ],
+      "dependencies": [
+        "step_6"
+      ],
+      "agent_type": "TOOL",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 1.0,
+      "automation_feasibility": 1.0,
+      "available_api": "Gmail API",
+      "suggested_tools": [
+        "Gmail API"
+      ],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Ensure proper authentication and authorization.",
+      "execution_order": null,
+      "metadata": {}
+    },
+    {
+      "id": "step_8",
+      "description": "Log interaction in database",
+      "inputs": [
+        "extracted information",
+        "request category",
+        "approved response",
+        "confirmation of sent email"
+      ],
+      "outputs": [
+        "database log"
+      ],
+      "dependencies": [
+        "step_7",
+        "step_3",
+        "step_6",
+        "step_2"
+      ],
+      "agent_type": "TOOL",
+      "risk_level": "UNKNOWN",
+      "requires_human_review": false,
+      "determinism_score": 1.0,
+      "automation_feasibility": 1.0,
+      "available_api": "SQL API",
+      "suggested_tools": [
+        "SQL API"
+      ],
+      "mitigation_suggestions": [],
+      "implementation_notes": "Implement proper data validation and sanitization.",
+      "execution_order": null,
+      "metadata": {}
+    }
+  ],
+  "summary": {
+    "total_steps": 8,
+    "automatable_count": 7,
+    "agent_required_count": 7,
+    "human_required_count": 1,
+    "automation_potential": 0.875,
+    "high_risk_steps": 0,
+    "critical_risk_steps": 0
+  },
+  "key_insights": [
+    {
+      "title": "Strong Automation Potential",
+      "description": "7/8 steps (88%) can be automated",
+      "priority": "HIGH",
+      "affected_steps": [
+        "step_1",
+        "step_2",
+        "step_3",
+        "step_4",
+        "step_5",
+        "step_7",
+        "step_8"
+      ]
+    },
+    {
+      "title": "Manual Review Bottleneck",
+      "description": "1/8 steps (12%) require human review",
+      "priority": "MEDIUM",
+      "affected_steps": [
+        "step_6"
+      ]
+    }
+  ],
+  "risks_and_compliance": {
+    "high_risk_steps": 0,
+    "critical_risk_steps": 0,
+    "human_review_required": true
+  },
+  "recommendations": [
+    "Prioritize automation of 7 automatable steps",
+    "Allocate resources for 1 manual review/approval step(s)"
+  ],
+  "analysis_timestamp": "2025-11-18T19:43:38.514079",
+  "analysis_duration_ms": 55520.57820840454
+}
