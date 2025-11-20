@@ -22,7 +22,7 @@ def _infer_mode(step: WorkflowStep) -> str:
     if step.available_api:
         return "TOOL_ONLY"
 
-    if step.automation_feasibility >= 0.6:
+    if step.automation_feasibility >= 0.7:
         return "LLM_WITH_TOOLS"
 
     return "HUMAN"
