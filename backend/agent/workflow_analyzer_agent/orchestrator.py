@@ -18,7 +18,7 @@ from .observability import StructuredLogger, DistributedTracer, MetricsCollector
 from .agents import WorkflowParserAgent, RiskAssessorAgent, AutomationAnalyzerAgent
 from .tools import lookup_api_docs, get_compliance_rules
 from .types import WorkflowAnalysis, KeyInsight, AutomationSummary, WorkflowStep
-from .config import MODEL
+from .config import MODEL, AUTOMATION_FEASIBLE_THRESHOLD
 
 
 class WorkflowAnalyzerOrchestrator:
@@ -295,7 +295,7 @@ class WorkflowAnalyzerOrchestrator:
 
         # Calculate summary statistics
         total_steps = len(merged_steps)
-        automatable_count = sum(1 for s in merged_steps if s.automation_feasibility >= 0.6)
+        automatable_count = sum(1 for s in merged_steps if s.automation_feasibility >= AUTOMATION_FEASIBLE_THRESHOLD)
         agent_required_count = sum(1 for s in merged_steps if s.agent_type != "HUMAN")
         human_required_count = sum(1 for s in merged_steps if s.agent_type == "HUMAN")
         critical_risk_steps = sum(1 for s in merged_steps if s.risk_level == "CRITICAL")
@@ -338,7 +338,7 @@ class WorkflowAnalyzerOrchestrator:
         insights = []
 
         total = len(steps)
-        automatable = sum(1 for s in steps if s.automation_feasibility >= 0.6)
+        automatable = sum(1 for s in steps if s.automation_feasibility >= AUTOMATION_FEASIBLE_THRESHOLD)
         critical_risk = sum(1 for s in steps if s.risk_level == "CRITICAL")
         human_required = sum(1 for s in steps if s.agent_type == "HUMAN")
 
@@ -348,7 +348,7 @@ class WorkflowAnalyzerOrchestrator:
                 title="Strong Automation Potential",
                 description=f"{automatable}/{total} steps ({automation_percentage:.0f}%) can be automated",
                 priority="HIGH" if automation_percentage >= 70 else "MEDIUM",
-                affected_steps=[s.id for s in steps if s.automation_feasibility >= 0.6]
+                affected_steps=[s.id for s in steps if s.automation_feasibility >= AUTOMATION_FEASIBLE_THRESHOLD]
             ))
 
         if critical_risk > 0:
@@ -374,7 +374,7 @@ class WorkflowAnalyzerOrchestrator:
         """Generate actionable recommendations."""
         recommendations = []
 
-        if summary.automation_potential >= 0.7:
+        if summary.automation_potential >= AUTOMATION_FEASIBLE_THRESHOLD:
             recommendations.append(
                 f"Prioritize automation of {summary.automatable_count} automatable steps"
             )

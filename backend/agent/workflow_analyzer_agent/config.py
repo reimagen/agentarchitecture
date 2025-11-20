@@ -16,7 +16,7 @@ AGENT_TYPES = ["adk_base", "agentic_rag", "TOOL", "HUMAN"]
 RISK_LEVELS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 
 # Automation Feasibility Threshold
-AUTOMATION_FEASIBLE_THRESHOLD = 0.6
+AUTOMATION_FEASIBLE_THRESHOLD = 0.7
 
 # Logging Configuration
 LOG_LEVEL = "INFO"
