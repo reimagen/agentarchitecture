@@ -6,7 +6,8 @@ import SummaryContainer from './components/workflow-display/SummaryContainer';
 import KeyInsights from './components/workflow-display/KeyInsights';
 import AnalyzedWorkflowsList from './components/AnalyzedWorkflowsList';
 import Approval from './components/workflow-actions/Approval'; // Import Approval component
-import DownloadButton from './components/workflow-actions/DownloadButton'; // Import DownloadButton component
+import DownloadButton from './components/workflow-actions/DownloadButton'; // Import DownloadButton component - No longer directly used, but the file exists
+import OrgGenerationCard from './components/workflow-actions/OrgGenerationCard'; // Import OrgGenerationCard component
 import { prepareWorkflowBody } from './utils/fileProcessor';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
   const [sidebarError, setSidebarError] = useState(null);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(null);
   const [isApproving, setIsApproving] = useState(false); // State for approval button
+  const [isGeneratingOrgAssets, setIsGeneratingOrgAssets] = useState(false); // State for org asset generation
 
   const WORKFLOW_API_BASE = 'http://localhost:8000/workflows';
 
@@ -111,6 +113,7 @@ function App() {
     if (!selectedWorkflowId) return;
 
     setIsApproving(true);
+    setIsGeneratingOrgAssets(true); // Set generating state to true
     setError(null);
 
     try {
@@ -138,6 +141,7 @@ function App() {
       setError(err.message);
     } finally {
       setIsApproving(false);
+      setIsGeneratingOrgAssets(false); // Reset generating state
     }
   };
 
@@ -174,24 +178,22 @@ function App() {
                   <div className="right-panel">
                     <SummaryContainer summary={analysisResult.analysis.summary} />
                     <KeyInsights insights={analysisResult.analysis.key_insights} />
-                    {(analysisResult.approvalStatus === 'PENDING' || analysisResult.approvalStatus === 'APPROVED') && (
-                                        <Approval
-                                          onApprove={handleApproveWorkflow}
-                                          isLoading={isApproving}
-                                          approvalStatus={analysisResult.approvalStatus}
-                                        />
-                                      )}
-                                      {analysisResult.agentRegistry && Object.keys(analysisResult.agentRegistry).length > 0 && (
-                                        <div className="agent-cards-container">
-                                          <h3>Agent Cards</h3>
-                                          <p>Download the generated agent cards as a JSON file, ready for agent deployment.</p>
-                                          <DownloadButton
-                                            fileName="agent_cards.json"
-                                            jsonContent={analysisResult.agentRegistry}
-                                            buttonText="Download Agent Cards JSON"
+                                        {(analysisResult.approvalStatus === 'PENDING' || analysisResult.approvalStatus === 'APPROVED') && (
+                                          <Approval
+                                            onApprove={handleApproveWorkflow}
+                                            isLoading={isApproving}
+                                            approvalStatus={analysisResult.approvalStatus}
                                           />
-                                        </div>
-                                      )}                  </div>
+                                        )}
+                                        {analysisResult && (
+                                          <OrgGenerationCard
+                                            approvalStatus={analysisResult.approvalStatus}
+                                            orgChart={analysisResult.orgChart}
+                                            agentRegistry={analysisResult.agentRegistry}
+                                            toolRegistry={analysisResult.toolRegistry}
+                                            isGenerating={isGeneratingOrgAssets}
+                                          />
+                                        )}                  </div>
                 </div>
               </div>
             )}

@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
 
@@ -177,12 +177,21 @@ class WorkflowRepository:
                 "updatedAt": now,
             })
 
-            # Auto-trigger org design synthesis
-            self._trigger_org_design_synthesis(workflow_id)
+            # Auto-trigger org design synthesis and capture results
+            org_chart, agent_registry, tool_registry = self._trigger_org_design_synthesis(workflow_id)
 
-            # Retrieve and return updated document
-            updated_doc = doc_ref.get()
-            return updated_doc.to_dict()
+            # Construct and return the updated document data directly
+            # This avoids a race condition by not re-fetching from Firestore immediately
+            return {
+                "workflow_id": workflow_id,
+                "approvalStatus": "APPROVED",
+                "approvedBy": approved_by,
+                "approvedAt": now,
+                "updatedAt": now,
+                "orgChart": org_chart,
+                "agentRegistry": agent_registry,
+                "toolRegistry": tool_registry,
+            }
 
         except (WorkflowNotFoundError, InvalidApprovalStateError):
             raise
@@ -380,19 +389,13 @@ class WorkflowRepository:
         except Exception as e:
             raise FirestoreError(f"Failed to delete workflow: {e}")
 
-    def _trigger_org_design_synthesis(self, workflow_id: str) -> None:
+    def _trigger_org_design_synthesis(self, workflow_id: str) -> Tuple[AgentOrgChart, Dict, Dict]:
         """
         Trigger org design synthesis after approval.
-
-        This method is called automatically after a workflow is approved.
-        It retrieves the analysis and runs org design synthesis.
-
-        Args:
-            workflow_id: Unique workflow identifier
-
-        Note:
-            - Org design synthesis errors are logged but don't fail the approval
-            - Synthesis result is auto-saved to Firestore via save_org_chart()
+        ...
+        Returns:
+            Tuple[AgentOrgChart, Dict, Dict]: The generated org_chart, agent_registry, and tool_registry.
+            Returns (None, None, None) if analysis cannot be retrieved or synthesis fails.
         """
         try:
             # Import here to avoid circular imports
@@ -402,7 +405,7 @@ class WorkflowRepository:
             analysis = self.get_workflow_analysis(workflow_id)
             if not analysis:
                 print(f"Warning: Could not retrieve analysis for workflow {workflow_id}")
-                return
+                return None, None, None # Return Nones on failure
 
             # Run org design synthesis
             org_chart, agent_registry, tool_registry = run_org_design_for_analysis(
@@ -418,7 +421,10 @@ class WorkflowRepository:
             )
 
             print(f"✓ Org design synthesis completed and saved for workflow {workflow_id}")
+            return org_chart, agent_registry, tool_registry
 
         except Exception as e:
             # Log error but don't block approval
             print(f"Warning: Org design synthesis failed for workflow {workflow_id}: {e}")
+            return None, None, None # Return Nones on failure
+
