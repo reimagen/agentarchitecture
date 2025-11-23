@@ -23,32 +23,45 @@ function StepCard({ step }) {
     return '#dc3545';
   };
 
+  const formatStepId = (id) => {
+    if (!id || !id.startsWith('step_')) {
+      return id; // Return original if not in expected format
+    }
+    const stepNumber = id.split('_')[1];
+    return `Step ${stepNumber}`;
+  };
+
   return (
     <div className="step-card">
       <div className="card-header">
-        <h3 className="step-id">{step.id}</h3>
+        <div className="card-left-section">
+          <h3 className="step-id">{formatStepId(step.id)}</h3>
+          <p className="step-description">{step.description}</p>
+        </div>
         <div className="card-badges">
-          <span
-            className="badge risk-badge"
-            style={{
-              backgroundColor: getRiskColor(step.risk_level),
-              color: 'white',
-              borderColor: getRiskColor(step.risk_level),
-            }}
-          >
-            Risk: {step.risk_level}
-          </span>
+          <div>
+            <span
+              className="badge risk-badge"
+              style={{
+                backgroundColor: getRiskColor(step.risk_level),
+                color: 'white',
+                borderColor: getRiskColor(step.risk_level),
+              }}
+            >
+              Risk: {step.risk_level}
+            </span>
+          </div>
           {step.requires_human_review && (
-            <span className="badge human-review-badge">🧑 Human Review</span>
+            <div className="human-review-wrapper">
+              <span className="badge human-review-badge">Needs Human Review</span>
+            </div>
           )}
         </div>
       </div>
 
-      <p className="step-description">{step.description}</p>
-
       <div className="step-metrics">
         <div className="metric">
-          <span className="metric-label">Automation:</span>
+          <span className="metric-label">Automation Compatibility:</span>
           <div className="metric-bar">
             <div
               className="metric-fill"

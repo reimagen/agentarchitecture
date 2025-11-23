@@ -17,6 +17,14 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 12px;
+  gap: 10px; /* Gap between left section and badges */
+}
+
+.card-left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* Space between step ID and description */
+  flex: 1; /* Allows it to take available space */
 }
 
 .step-id {
@@ -28,9 +36,12 @@
 
 .card-badges {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex-shrink: 0; /* Prevent badges from shrinking */
 }
 
 .badge {
@@ -43,6 +54,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap; /* Prevent badge text from wrapping */
 }
 
 .risk-badge {
@@ -57,7 +69,7 @@
 }
 
 .step-description {
-  margin: 0 0 12px 0;
+  margin: 0; /* Remove margin-bottom */
   font-size: 14px;
   color: #555;
   line-height: 1.5;
