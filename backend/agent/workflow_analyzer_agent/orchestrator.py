@@ -81,24 +81,11 @@ class WorkflowAnalyzerOrchestrator:
 
         self.logger.info("Orchestrator initialized successfully")
 
-    async def analyze_workflow(self, workflow_text: str) -> WorkflowAnalysis:
+    async def analyze_workflow(self, workflow_text: str, workflow_name: Optional[str] = None) -> WorkflowAnalysis:
         """
         Main orchestration method - sequential + parallel execution.
-
-        Flow:
-        1. Create session
-        2. Run Agent 1 (sequential)
-        3. Launch Agent 2 & 3 (parallel)
-        4. Wait for both to complete
-        5. Merge results
-        6. Collect metrics
-        7. Return WorkflowAnalysis
-
-        Args:
-            workflow_text: The workflow description text
-
-        Returns:
-            WorkflowAnalysis: Complete analysis result
+        # ...
+        # (rest of docstring remains the same)
         """
         session = self.session_manager.create_session()
         trace_id = session.trace_id
@@ -156,6 +143,7 @@ class WorkflowAnalyzerOrchestrator:
                         workflow_id=final_analysis.workflow_id,
                         original_text=workflow_text,
                         analysis=final_analysis,
+                        workflow_name=workflow_name, # Pass workflow_name here
                     )
                     self.logger.info(
                         "Analysis saved successfully to Firestore",

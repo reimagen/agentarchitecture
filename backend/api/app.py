@@ -13,10 +13,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from database.firebase_client import FirebaseClient
 
-# Load environment variables from backend/.env
-env_file = Path(__file__).parent.parent / ".env"
-load_dotenv(env_file)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,12 +23,15 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Initialize Firebase
     try:
-        firebase_creds_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
-        if firebase_creds_path:
-            FirebaseClient.initialize(firebase_creds_path)
-            print("✓ Firebase initialized on startup")
-        else:
-            print("⚠ FIREBASE_CREDENTIALS_PATH not set. Firebase features will be unavailable.")
+        # Construct an absolute path to the default credentials file for robustness
+        backend_dir = Path(__file__).parent.parent.resolve()
+        default_creds_path = backend_dir / "firebase-service-account.json"
+
+        firebase_creds_path = os.getenv(
+            "FIREBASE_CREDENTIALS_PATH", default_creds_path
+        )
+        FirebaseClient.initialize(firebase_creds_path)
+        print("✓ Firebase initialized on startup")
     except Exception as e:
         print(f"⚠ Failed to initialize Firebase: {e}")
         print("  Continuing without Firebase persistence")

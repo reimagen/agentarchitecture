@@ -1,5 +1,6 @@
 import React from 'react';
 import './SummaryContainer.css';
+import Meter from './Meter'; // Import the new Meter component
 
 function SummaryContainer({ summary }) {
   if (!summary) {
@@ -57,18 +58,7 @@ function SummaryContainer({ summary }) {
       </div>
 
       <div className="automation-potential">
-        <h3>Automation Potential</h3>
-        <div className="potential-bar">
-          <div
-            className="potential-fill"
-            style={{
-              width: `${(summary.automation_potential || 0) * 100}%`,
-            }}
-          />
-        </div>
-        <div className="potential-text">
-          {Math.round((summary.automation_potential || 0) * 100)}% of workflow can be automated
-        </div>
+        <Meter value={summary.automation_potential || 0} />
       </div>
     </div>
   );

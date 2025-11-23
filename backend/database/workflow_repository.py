@@ -36,18 +36,12 @@ class WorkflowRepository:
         workflow_id: str,
         original_text: str,
         analysis: WorkflowAnalysis,
+        workflow_name: Optional[str] = None, # Added this parameter
     ) -> None:
         """
         Save workflow analysis to Firestore.
-
-        Args:
-            workflow_id: Unique workflow identifier
-            original_text: Raw workflow text input
-            analysis: WorkflowAnalysis Pydantic model
-
-        Raises:
-            SerializationError: If serialization fails
-            FirestoreError: If Firestore operation fails
+        # ...
+        # (Rest of the docstring remains the same)
         """
         try:
             # Serialize analysis to dict
@@ -69,6 +63,7 @@ class WorkflowRepository:
                 "createdAt": doc.get("createdAt") if doc.exists else now,
                 "updatedAt": now,
                 "sessionId": analysis.session_id,
+                "workflowName": workflow_name if workflow_name else f"Workflow {workflow_id[:8]}", # Added this line
                 "metadata": {
                     "notes": "",
                     "tags": [],
@@ -312,6 +307,7 @@ class WorkflowRepository:
                 data = doc.to_dict()
                 results.append({
                     "workflow_id": doc.id,
+                    "workflowName": data.get("workflowName"), # Added this line
                     "approvalStatus": data.get("approvalStatus"),
                     "createdAt": data.get("createdAt"),
                     "updatedAt": data.get("updatedAt"),
@@ -400,7 +396,7 @@ class WorkflowRepository:
         """
         try:
             # Import here to avoid circular imports
-            from backend.agent.org_design.service import run_org_design_for_analysis
+            from agent.org_design.service import run_org_design_for_analysis
 
             # Retrieve the approved workflow analysis
             analysis = self.get_workflow_analysis(workflow_id)
@@ -411,11 +407,17 @@ class WorkflowRepository:
             # Run org design synthesis
             org_chart, agent_registry, tool_registry = run_org_design_for_analysis(
                 analysis=analysis,
-                workflow_repository=self,
             )
 
-            # org chart auto-saves inside run_org_design_for_analysis()
-            print(f"✓ Org design synthesis completed for workflow {workflow_id}")
+            # Save org chart via repository
+            self.save_org_chart(
+                workflow_id=workflow_id,
+                org_chart=org_chart,
+                agent_registry=agent_registry,
+                tool_registry=tool_registry,
+            )
+
+            print(f"✓ Org design synthesis completed and saved for workflow {workflow_id}")
 
         except Exception as e:
             # Log error but don't block approval

@@ -7,7 +7,7 @@ them (e.g., in a database or object store) keyed by workflow_id.
 
 from typing import Tuple
 
-from backend.agent.workflow_analyzer_agent.types import WorkflowAnalysis
+from agent.workflow_analyzer_agent.types import WorkflowAnalysis
 
 from .designer import (
     build_agent_registry,
@@ -33,4 +33,3 @@ def run_org_design_for_analysis(
     tool_registry = build_tool_registry(org_chart)
 
     return org_chart, agent_registry, tool_registry
-
