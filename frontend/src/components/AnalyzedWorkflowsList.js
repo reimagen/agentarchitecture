@@ -5,23 +5,11 @@ function AnalyzedWorkflowsList({
   workflows,
   selectedWorkflowId,
   onSelect,
-  onSelectNewWorkflow,
-  isNewWorkflowSelected,
   loading,
   error,
 }) {
   return (
     <aside className="analyzed-workflows">
-      <button
-        type="button"
-        className={`analyzed-workflows__new-button ${
-          isNewWorkflowSelected ? 'is-active' : ''
-        }`}
-        onClick={() => onSelectNewWorkflow && onSelectNewWorkflow()}
-      >
-        + Analyze New Workflow
-      </button>
-
       <div className="analyzed-workflows__header">
         <h2>Previous Analyses</h2>
         {loading && <span className="analyzed-workflows__status">Loading…</span>}

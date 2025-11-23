@@ -10,28 +10,6 @@
   top: var(--header-height);
 }
 
-.analyzed-workflows__new-button {
-  margin: 20px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  border: 1px dashed #3a7bff;
-  background-color: rgba(58, 123, 255, 0.15);
-  color: #e8f0ff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.analyzed-workflows__new-button:hover {
-  background-color: rgba(58, 123, 255, 0.2);
-}
-
-.analyzed-workflows__new-button.is-active {
-  background-color: #3a7bff;
-  color: #fff;
-  border-style: solid;
-}
-
 .analyzed-workflows__header {
   padding: 20px;
   border-bottom: 1px solid #333;

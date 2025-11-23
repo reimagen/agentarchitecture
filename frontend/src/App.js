@@ -319,8 +319,15 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Workflow Analyzer</h1>
-        <p>Upload a workflow file to analyze automation potential</p>
+        <div className="nav-brand">Calibrate</div>
+        <button
+          type="button"
+          className="btn btn--primary nav-new-workflow"
+          onClick={handleSelectNewWorkflow}
+          disabled={isUploadView}
+        >
+          Analyze New Workflow
+        </button>
       </header>
 
       <div className="app-shell">
@@ -329,8 +336,6 @@ function App() {
           loading={sidebarLoading}
           error={sidebarError}
           selectedWorkflowId={selectedWorkflowId}
-          onSelectNewWorkflow={handleSelectNewWorkflow}
-          isNewWorkflowSelected={isUploadView}
           onSelect={handleWorkflowSelect}
         />
 
@@ -339,7 +344,7 @@ function App() {
             {isUploadView ? (
               <div className="card card--spacious upload-panel">
                 <h2 className="card-title">Analyze New Workflow</h2>
-                <p>Upload a JSON, TXT, or YAML file to run a fresh workflow analysis.</p>
+                <p>Upload a workflow file to analyze automation potential.</p>
                 {error && <div className="error-message">{error}</div>}
                 <FileUpload onFileUpload={handleFileUpload} loading={loading} />
               </div>
