@@ -191,6 +191,7 @@ class WorkflowRepository:
                 "orgChart": org_chart,
                 "agentRegistry": agent_registry,
                 "toolRegistry": tool_registry,
+                "workflowName": doc.get("workflowName"),
             }
 
         except (WorkflowNotFoundError, InvalidApprovalStateError):
@@ -403,6 +404,35 @@ class WorkflowRepository:
             raise
         except Exception as e:
             raise FirestoreError(f"Failed to delete workflow: {e}")
+
+    def update_workflow_name(self, workflow_id: str, workflow_name: str) -> Dict[str, Any]:
+        """Update the user-friendly workflow name."""
+        sanitized_name = (workflow_name or "").strip()
+        if not sanitized_name:
+            raise ValueError("workflow_name must be a non-empty string")
+
+        try:
+            doc_ref = self.db.collection(self.collection_name).document(workflow_id)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
+
+            now = datetime.utcnow().isoformat() + "Z"
+            doc_ref.update({
+                "workflowName": sanitized_name,
+                "updatedAt": now,
+            })
+
+            updated_doc = doc_ref.get()
+            return updated_doc.to_dict()
+
+        except WorkflowNotFoundError:
+            raise
+        except ValueError:
+            raise
+        except Exception as e:
+            raise FirestoreError(f"Failed to update workflow name: {e}")
 
     def _trigger_org_design_synthesis(self, workflow_id: str) -> Tuple[AgentOrgChart, Dict, Dict]:
         """

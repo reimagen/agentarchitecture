@@ -9,7 +9,7 @@ function StepsList({ steps, registerStepRef }) {
 
   return (
     <div className="steps-container">
-      <h2>Workflow Steps</h2>
+      <h2 className="card-title">Workflow Steps</h2>
       <div className="steps-list">
         {steps.map((step, index) => (
           <StepCard

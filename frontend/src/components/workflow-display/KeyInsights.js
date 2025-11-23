@@ -62,7 +62,7 @@ function KeyInsights({ insights, onStepClick }) {
 
   return (
     <div className="insights-container">
-      <h2>Key Insights</h2>
+      <h2 className="card-title">Key Insights</h2>
       <div className="insights-list">
         {insights.map((insight, index) => (
           <div

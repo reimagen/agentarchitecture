@@ -42,7 +42,7 @@ function SummaryContainer({ summary }) {
 
   return (
     <div className="summary-container">
-      <h2>Summary</h2>
+      <h2 className="card-title">Summary</h2>
       <div className="summary-grid">
         {stats.map((stat, index) => (
           <div key={index} className="summary-stat">

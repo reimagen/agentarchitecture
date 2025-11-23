@@ -21,6 +21,11 @@ class WorkflowRequest(BaseModel):
     workflow_id: Optional[str] = None
     workflow_name: Optional[str] = None
 
+
+class WorkflowNameUpdate(BaseModel):
+    """Request body for updating workflow name."""
+    workflow_name: str
+
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
 # Global orchestrator and repository instances
@@ -104,6 +109,7 @@ async def create_workflow(request: WorkflowRequest):
             "createdAt": workflow_doc.get("createdAt"),
             "updatedAt": workflow_doc.get("updatedAt"),
             "analysis": workflow_doc.get("analysis"),
+            "workflowName": workflow_doc.get("workflowName"),
         }
 
     except HTTPException:
@@ -151,6 +157,7 @@ async def get_workflow(workflow_id: str):
             "createdAt": workflow_doc.get("createdAt"),
             "updatedAt": workflow_doc.get("updatedAt"),
             "metadata": workflow_doc.get("metadata"),
+            "workflowName": workflow_doc.get("workflowName"),
         }
 
     except HTTPException:
@@ -194,6 +201,33 @@ async def list_workflows(
         error_detail = f"Failed to list workflows. Internal error: {str(e)}"
         print(f"ERROR: {error_detail}")  # Log the full error to the console
         raise HTTPException(status_code=500, detail=error_detail)
+
+
+@router.patch("/{workflow_id}/name")
+async def update_workflow_name(workflow_id: str, request: WorkflowNameUpdate):
+    """Update the workflow's display name."""
+    try:
+        new_name = (request.workflow_name or "").strip()
+        if not new_name:
+            raise HTTPException(status_code=400, detail="workflow_name must be a non-empty string")
+
+        repository = get_repository()
+        updated_doc = repository.update_workflow_name(workflow_id, new_name)
+
+        return {
+            "workflow_id": workflow_id,
+            "workflowName": updated_doc.get("workflowName"),
+            "updatedAt": updated_doc.get("updatedAt"),
+        }
+
+    except WorkflowNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update workflow name: {str(e)}")
 
 
 @router.delete("/{workflow_id}")

@@ -8,7 +8,7 @@ const OrgGenerationCard = ({ approvalStatus, orgChart, agentRegistry, toolRegist
 
   return (
     <div className={`org-generation-card ${!isApproved || isGenerating ? 'disabled' : ''}`}>
-      <h3>Agent Organization Assets</h3>
+      <h3 className="card-title">Agent Organization Assets</h3>
       {isGenerating ? (
         <p className="status-message generating-message">Generating Org Assets...</p>
       ) : !isApproved ? (
@@ -49,4 +49,3 @@ const OrgGenerationCard = ({ approvalStatus, orgChart, agentRegistry, toolRegist
 };
 
 export default OrgGenerationCard;
-

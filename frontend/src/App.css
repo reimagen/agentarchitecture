@@ -116,13 +116,39 @@
   margin-top: 15px; /* Added margin-top for spacing from text */
 }
 
-.agent-cards-container {
+.card {
   background-color: #ffffff;
-  padding: 24px;
-  border-radius: 8px;
-  margin-top: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.card-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #333;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 8px;
+}
+
+.card--compact {
+  padding: 20px;
+}
+
+
+
+.card--spacious {
+  padding: 40px;
+}
+
+.agent-cards-container {
+  margin-top: 20px;
+  padding: 24px;
 }
 
 .agent-cards-container h3 {
@@ -139,20 +165,9 @@
 
 .upload-panel,
 .placeholder-panel {
-  background-color: #ffffff;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e0e0e0;
   margin-top: 20px;
+  padding: 40px;
   text-align: left;
-}
-
-.upload-panel h2 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 24px;
-  color: #222;
 }
 
 .upload-panel p {
@@ -169,4 +184,148 @@
   font-size: 18px;
   color: #666;
   min-height: 200px;
+}
+
+.workflow-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.workflow-title-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workflow-title-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4c5563;
+}
+
+.workflow-detail-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2933;
+}
+
+.workflow-title-edit {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.workflow-title-form {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.workflow-title-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 18px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+}
+
+.workflow-title-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.delete-workflow-section {
+  margin-top: 20px;
+}
+
+.btn {
+  border: none;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--danger {
+  background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(172, 11, 33, 0.3);
+}
+
+.btn--neutral {
+  background-color: #e2e6ea;
+  color: #333;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn--success {
+  background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(33, 136, 56, 0.3);
+}
+
+.btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.delete-workflow-button {
+  width: 100%;
+}
+
+.delete-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.delete-confirm-card {
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fff5f5;
+}
+
+.delete-confirm-text {
+  margin: 0 0 12px 0;
+  color: #721c24;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.delete-cancel-button {
+  background-color: #e2e6ea;
+  color: #333;
+}
+
+.delete-confirm-button {
+  background-color: #c82333;
+  color: white;
 }

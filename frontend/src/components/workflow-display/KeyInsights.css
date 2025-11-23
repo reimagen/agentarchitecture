@@ -1,16 +1,5 @@
 .insights-container {
-  background: white;
-  border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.insights-container h2 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  color: #333;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 8px;
 }
 
 .insights-list {

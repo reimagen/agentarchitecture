@@ -1,22 +1,12 @@
 .org-generation-card {
-  background-color: #ffffff;
   padding: 24px;
-  border-radius: 8px;
-  margin-top: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e0e0e0;
+  margin: 0;
   transition: opacity 0.3s ease;
 }
 
 .org-generation-card.disabled {
   opacity: 0.6;
   pointer-events: none; /* Disable interaction */
-}
-
-.org-generation-card h3 {
-  margin: 0 0 10px 0;
-  font-size: 18px;
-  color: #333;
 }
 
 .org-generation-card p {
