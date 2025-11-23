@@ -5,11 +5,16 @@
   padding: 16px;
   margin-bottom: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .step-card:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.step-card.highlight-step {
+  border-color: #3a7bff;
+  box-shadow: 0 0 0 3px rgba(58, 123, 255, 0.3);
 }
 
 .card-header {

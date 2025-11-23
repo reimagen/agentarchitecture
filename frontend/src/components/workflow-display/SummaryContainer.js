@@ -14,10 +14,9 @@ function SummaryContainer({ summary }) {
       icon: '📋',
     },
     {
-      label: 'Automatable',
+      label: 'Automatable Steps',
       value: summary.automatable_count,
       icon: '⚙️',
-      subtitle: `${Math.round((summary.automatable_count / summary.total_steps) * 100)}%`,
     },
     {
       label: 'Agent Compatible',

@@ -1,7 +1,7 @@
 import React from 'react';
 import './StepCard.css';
 
-function StepCard({ step }) {
+const StepCard = React.forwardRef(({ step }, ref) => {
   const getRiskColor = (riskLevel) => {
     switch (riskLevel?.toLowerCase()) {
       case 'critical':
@@ -32,7 +32,11 @@ function StepCard({ step }) {
   };
 
   return (
-    <div className="step-card">
+    <div
+      ref={ref}
+      className="step-card"
+      id={step.id ? `step-${step.id}` : undefined}
+    >
       <div className="card-header">
         <div className="card-left-section">
           <h3 className="step-id">{formatStepId(step.id)}</h3>
@@ -108,6 +112,8 @@ function StepCard({ step }) {
       )}
     </div>
   );
-}
+});
+
+StepCard.displayName = 'StepCard';
 
 export default StepCard;

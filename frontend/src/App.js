@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
 import FileUpload from './components/FileUpload';
 import StepsList from './components/workflow-display/StepsList';
@@ -21,6 +21,8 @@ function App() {
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(NEW_WORKFLOW_ID);
   const [isApproving, setIsApproving] = useState(false); // State for approval button
   const [isGeneratingOrgAssets, setIsGeneratingOrgAssets] = useState(false); // State for org asset generation
+  const stepRefs = useRef({});
+  const highlightTimeouts = useRef({});
 
   const WORKFLOW_API_BASE = 'http://localhost:8000/workflows';
 
@@ -155,6 +157,40 @@ function App() {
     }
   };
 
+  const handleRegisterStepRef = useCallback((stepId, element) => {
+    if (!stepId) return;
+    if (element) {
+      stepRefs.current[stepId] = element;
+    } else {
+      delete stepRefs.current[stepId];
+    }
+  }, []);
+
+  const handleInsightStepClick = useCallback((stepId) => {
+    if (!stepId) return;
+    const target = stepRefs.current[stepId];
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target.classList.add('highlight-step');
+
+    if (highlightTimeouts.current[stepId]) {
+      clearTimeout(highlightTimeouts.current[stepId]);
+    }
+
+    highlightTimeouts.current[stepId] = setTimeout(() => {
+      target.classList.remove('highlight-step');
+      delete highlightTimeouts.current[stepId];
+    }, 1600);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(highlightTimeouts.current).forEach((timeoutId) => clearTimeout(timeoutId));
+      highlightTimeouts.current = {};
+    };
+  }, []);
+
   console.log('Current analysisResult state:', analysisResult);
   const isUploadView = selectedWorkflowId === NEW_WORKFLOW_ID;
   const hasAnalysis = Boolean(analysisResult?.analysis) && !isUploadView;
@@ -192,11 +228,17 @@ function App() {
                 <div className="results-container">
                   <div className="results-grid">
                     <div className="left-panel">
-                      <StepsList steps={analysisResult.analysis.steps} />
+                      <StepsList
+                        steps={analysisResult.analysis.steps}
+                        registerStepRef={handleRegisterStepRef}
+                      />
                     </div>
                     <div className="right-panel">
                       <SummaryContainer summary={analysisResult.analysis.summary} />
-                      <KeyInsights insights={analysisResult.analysis.key_insights} />
+                      <KeyInsights
+                        insights={analysisResult.analysis.key_insights}
+                        onStepClick={handleInsightStepClick}
+                      />
                       {(analysisResult.approvalStatus === 'PENDING' || analysisResult.approvalStatus === 'APPROVED') && (
                         <Approval
                           onApprove={handleApproveWorkflow}
