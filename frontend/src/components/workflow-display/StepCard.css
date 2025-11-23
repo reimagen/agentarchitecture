@@ -40,6 +40,9 @@
   font-weight: 600;
   border: 1.5px solid;
   background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .risk-badge {

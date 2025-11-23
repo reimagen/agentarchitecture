@@ -20,12 +20,12 @@ function SummaryContainer({ summary }) {
       subtitle: `${Math.round((summary.automatable_count / summary.total_steps) * 100)}%`,
     },
     {
-      label: 'Require Agent',
+      label: 'Agent Compatible',
       value: summary.agent_required_count,
       icon: '🤖',
     },
     {
-      label: 'Require Human',
+      label: 'Requires Human',
       value: summary.human_required_count,
       icon: '👤',
     },
@@ -58,6 +58,7 @@ function SummaryContainer({ summary }) {
       </div>
 
       <div className="automation-potential">
+        <h3>Full Automation Potential</h3>
         <Meter value={summary.automation_potential || 0} />
       </div>
     </div>

@@ -12,7 +12,6 @@ const Meter = ({ value = 0 }) => {
 
   return (
     <div className="meter-container">
-      <div className="meter-label">Automation Potential</div>
       <div className="meter-bar">
         <div 
           className="meter-fill" 

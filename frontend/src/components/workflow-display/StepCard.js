@@ -28,8 +28,15 @@ function StepCard({ step }) {
       <div className="card-header">
         <h3 className="step-id">{step.id}</h3>
         <div className="card-badges">
-          <span className="badge risk-badge" style={{ borderColor: getRiskColor(step.risk_level) }}>
-            {step.risk_level}
+          <span
+            className="badge risk-badge"
+            style={{
+              backgroundColor: getRiskColor(step.risk_level),
+              color: 'white',
+              borderColor: getRiskColor(step.risk_level),
+            }}
+          >
+            Risk: {step.risk_level}
           </span>
           {step.requires_human_review && (
             <span className="badge human-review-badge">🧑 Human Review</span>
@@ -56,6 +63,15 @@ function StepCard({ step }) {
 
         <div className="metric">
           <span className="metric-label">Determinism:</span>
+          <div className="metric-bar">
+            <div
+              className="metric-fill"
+              style={{
+                width: `${(step.determinism_score || 0) * 100}%`,
+                backgroundColor: getAutomationColor(step.determinism_score), // Use getAutomationColor
+              }}
+            />
+          </div>
           <span className="metric-value">{Math.round((step.determinism_score || 0) * 100)}%</span>
         </div>
 

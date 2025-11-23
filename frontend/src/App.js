@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import './App.css';
 import FileUpload from './components/FileUpload';
-import StepsList from './components/StepsList';
-import SummaryContainer from './components/SummaryContainer';
-import KeyInsights from './components/KeyInsights';
+import StepsList from './components/workflow-display/StepsList';
+import SummaryContainer from './components/workflow-display/SummaryContainer';
+import KeyInsights from './components/workflow-display/KeyInsights';
 import AnalyzedWorkflowsList from './components/AnalyzedWorkflowsList';
-import Approval from './components/Approval'; // Import Approval component
+import Approval from './components/workflow-actions/Approval'; // Import Approval component
+import DownloadButton from './components/workflow-actions/DownloadButton'; // Import DownloadButton component
 import { prepareWorkflowBody } from './utils/fileProcessor';
 
 function App() {
@@ -140,6 +141,8 @@ function App() {
     }
   };
 
+  console.log('Current analysisResult state:', analysisResult);
+
   return (
     <div className="App">
       <header className="App-header">
@@ -172,13 +175,23 @@ function App() {
                     <SummaryContainer summary={analysisResult.analysis.summary} />
                     <KeyInsights insights={analysisResult.analysis.key_insights} />
                     {(analysisResult.approvalStatus === 'PENDING' || analysisResult.approvalStatus === 'APPROVED') && (
-                      <Approval
-                        onApprove={handleApproveWorkflow}
-                        isLoading={isApproving}
-                        approvalStatus={analysisResult.approvalStatus}
-                      />
-                    )}
-                  </div>
+                                        <Approval
+                                          onApprove={handleApproveWorkflow}
+                                          isLoading={isApproving}
+                                          approvalStatus={analysisResult.approvalStatus}
+                                        />
+                                      )}
+                                      {analysisResult.agentRegistry && Object.keys(analysisResult.agentRegistry).length > 0 && (
+                                        <div className="agent-cards-container">
+                                          <h3>Agent Cards</h3>
+                                          <p>Download the generated agent cards as a JSON file, ready for agent deployment.</p>
+                                          <DownloadButton
+                                            fileName="agent_cards.json"
+                                            jsonContent={analysisResult.agentRegistry}
+                                            buttonText="Download Agent Cards JSON"
+                                          />
+                                        </div>
+                                      )}                  </div>
                 </div>
               </div>
             )}

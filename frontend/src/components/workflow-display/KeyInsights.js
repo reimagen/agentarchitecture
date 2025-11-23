@@ -8,29 +8,55 @@ function KeyInsights({ insights }) {
     return <div className="insights-container">No insights available</div>;
   }
 
-  const getPriorityColor = (priority) => {
+  const getInsightColor = (priority, title) => {
+    if (title.includes("Strong Automation Potential")) {
+      return '#28a745'; // Green for strong
+    }
+    if (title.includes("Critical Compliance Risks")) {
+      return '#dc3545'; // Red for critical
+    }
+    if (title.includes("Manual Review Bottleneck")) {
+      return '#ffc107'; // Yellow for bottleneck
+    }
+
+    // Default mapping for other insights or if keywords not found
     switch (priority?.toUpperCase()) {
-      case 'HIGH':
-        return '#dc3545';
-      case 'MEDIUM':
-        return '#ffc107';
       case 'LOW':
-        return '#28a745';
+        return '#28a745'; // Green
+      case 'MEDIUM':
+        return '#ffc107'; // Yellow
+      case 'HIGH':
+        return '#dc3545'; // Red
+      case 'CRITICAL':
+        return '#dc3545'; // Red
       default:
-        return '#6c757d';
+        return '#6c757d'; // Grey default
     }
   };
 
-  const getPriorityIcon = (priority) => {
+  const getInsightIcon = (priority, title) => {
+    if (title.includes("Strong Automation Potential")) {
+      return '🟢'; // Green circle for strong
+    }
+    if (title.includes("Critical Compliance Risks")) {
+      return '🔴'; // Red circle for critical
+    }
+    if (title.includes("Manual Review Bottleneck")) {
+      return '🟡'; // Yellow circle for bottleneck
+    }
+
+    // Default mapping for other insights or if keywords not found
     switch (priority?.toUpperCase()) {
-      case 'HIGH':
-        return '🔴';
-      case 'MEDIUM':
-        return '🟡';
       case 'LOW':
-        return '🟢';
+        return '🟢'; // Green circle
+      case 'MEDIUM':
+        return '🟡'; // Yellow circle
+      case 'HIGH':
+        return '🔴'; // Red circle
+      case 'CRITICAL':
+        return '🔴'; // Red circle
       default:
-        return '⚪';
+        return '⚪'; // White/Grey default
     }
   };
 
@@ -43,7 +69,7 @@ function KeyInsights({ insights }) {
             key={index}
             className="insight-card"
             style={{
-              borderLeftColor: getPriorityColor(insight.priority),
+              borderLeftColor: getInsightColor(insight.priority, insight.title),
             }}
           >
             <div
@@ -54,7 +80,7 @@ function KeyInsights({ insights }) {
             >
               <div className="insight-title-section">
                 <span className="priority-icon">
-                  {getPriorityIcon(insight.priority)}
+                  {getInsightIcon(insight.priority, insight.title)}
                 </span>
                 <div>
                   <h3 className="insight-title">{insight.title}</h3>
