@@ -65,6 +65,34 @@ const StepCard = React.forwardRef(({ step }, ref) => {
 
       <div className="step-metrics">
         <div className="metric">
+          <span className="metric-label">Inputs:</span>
+          {
+            step.inputs.length === 0 ? "N/A" :
+              <ul>
+                {
+                  step.inputs.map((input, i) => {
+                    return <li key={i} className="metric-value">{input || 'N/A'}</li>
+                  })
+                }
+              </ul>
+          }
+        </div>
+
+        <div className="metric">
+          <span className="metric-label">Outputs:</span>
+          {
+            step.outputs.length === 0 ? "N/A" :
+              <ul>
+                {
+                  step.outputs.map((output, i) => {
+                    return <li key={i} className="metric-value">{output || 'N/A'}</li>
+                  })
+                }
+              </ul>
+          }
+        </div>
+
+        <div className="metric">
           <span className="metric-label">Automation Compatibility:</span>
           <div className="metric-bar">
             <div
@@ -90,6 +118,22 @@ const StepCard = React.forwardRef(({ step }, ref) => {
             />
           </div>
           <span className="metric-value">{Math.round((step.determinism_score || 0) * 100)}%</span>
+        </div>
+
+        <div className="metric">
+          <span className="metric-label">Notes:</span>
+          <span className="metric-value">{step.implementation_notes || 'N/A'}</span>
+        </div>
+
+        <div className="metric">
+          <span className="metric-label">Migitations:</span>
+          <ul>
+            {
+              step.mitigation_suggestions.map((ms, i) => {
+                return <li key={i} className="metric-value">{ms || 'N/A'}</li>
+              })
+            }
+          </ul>
         </div>
 
         <div className="metric">

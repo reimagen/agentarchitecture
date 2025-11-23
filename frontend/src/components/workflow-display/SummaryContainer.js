@@ -56,10 +56,18 @@ function SummaryContainer({ summary }) {
         ))}
       </div>
 
+      {summary.automation_summary.overall_assessment && (
+        <div className="overall-assessment">
+          <h3>Overall Assessment</h3>
+          <p>{summary.automation_summary.overall_assessment}</p>
+        </div>
+      )}
+      
       <div className="automation-potential">
         <h3>Full Automation Potential</h3>
         <Meter value={summary.automation_potential || 0} />
       </div>
+
     </div>
   );
 }

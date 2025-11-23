@@ -15,7 +15,7 @@ load_dotenv()
 
 from .session import SessionState, SessionManager
 from .observability import StructuredLogger, DistributedTracer, MetricsCollector
-from .agents import WorkflowParserAgent, RiskAssessorAgent, AutomationAnalyzerAgent
+from .agents import WorkflowParserAgent, RiskAssessorAgent, AutomationAnalyzerAgent, AutomationSummarizerAgent
 from .tools import lookup_api_docs, get_compliance_rules
 from .types import WorkflowAnalysis, KeyInsight, AutomationSummary, WorkflowStep
 from .config import MODEL, AUTOMATION_FEASIBLE_THRESHOLD
@@ -25,9 +25,10 @@ class WorkflowAnalyzerOrchestrator:
     """
     Main orchestrator for workflow analysis.
 
-    Coordinates the execution of three specialized agents:
+    Coordinates the execution of four specialized agents:
     1. Agent 1 (Sequential): Parses workflow into steps
     2. Agent 2 & 3 (Parallel): Risk assessment and automation analysis
+    3. Agent 4 (Sequential): Synthesizes insights and recommendations
     """
 
     def __init__(self, model: str = MODEL, workflow_repository=None):
@@ -75,6 +76,7 @@ class WorkflowAnalyzerOrchestrator:
 
         self.agent2 = RiskAssessorAgent(self.client, self.logger, self.tracer, tools)
         self.agent3 = AutomationAnalyzerAgent(self.client, self.logger, self.tracer, tools)
+        self.agent4 = AutomationSummarizerAgent(self.client, self.logger, self.tracer)
 
         # Optional workflow repository for auto-saving
         self.workflow_repository = workflow_repository
@@ -131,6 +133,19 @@ class WorkflowAnalyzerOrchestrator:
             session.parallel_end_time = datetime.utcnow()
 
             self.logger.info("Parallel agents completed", trace_id=trace_id)
+
+            # SEQUENTIAL: Agent 4 (runs after Agents 2 & 3)
+            self.logger.info("Agent 4: Starting automation summarization", trace_id=trace_id)
+
+            with self.tracer.span(trace_id, "agent4_summarize", "automation_summarizer"):
+                summary = self.agent4.summarize(session)
+
+            self.logger.info(
+                "Agent 4: Completed",
+                trace_id=trace_id,
+                automation_potential_percentage=summary.get("automation_potential_percentage", 0) if summary else 0,
+                latency_ms=session.agent4_latency if hasattr(session, 'agent4_latency') else 0
+            )
 
             # Merge results
             final_analysis = self._merge_results(session)
@@ -239,6 +254,7 @@ class WorkflowAnalyzerOrchestrator:
         parsed_steps = session.parsed_steps.get("steps", []) if session.parsed_steps else []
         risk_assessments = session.risks.get("risk_assessments", []) if session.risks else []
         automation_analyses = session.automation.get("automation_analyses", []) if session.automation else []
+        workflow_summary = session.automation_summary.get("summary", {}) if session.automation_summary else {}
 
         risks_map = {r.get("step_id"): r for r in risk_assessments}
         automation_map = {a.get("step_id"): a for a in automation_analyses}
@@ -298,7 +314,8 @@ class WorkflowAnalyzerOrchestrator:
             human_required_count=human_required_count,
             automation_potential=automation_potential,
             high_risk_steps=high_risk_steps,
-            critical_risk_steps=critical_risk_steps
+            critical_risk_steps=critical_risk_steps,
+            automation_summary=workflow_summary,
         )
 
         insights = self._extract_insights(merged_steps)

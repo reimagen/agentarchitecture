@@ -114,6 +114,7 @@ class AutomationSummary(BaseModel):
     automation_potential: float = Field(ge=0.0, le=1.0)
     high_risk_steps: int = 0
     critical_risk_steps: int = 0
+    automation_summary: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
         """Pydantic config."""
