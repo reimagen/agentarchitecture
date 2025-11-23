@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent.workflow_analyzer_agent.types import WorkflowAnalysis
-from agent.org_design.types import AgentOrgChart
+from agent.org_design.types import AgentOrgChart, AgentRegistry, ToolRegistry
 from database.exceptions import (
     WorkflowNotFoundError,
     InvalidApprovalStateError,
@@ -198,12 +198,27 @@ class WorkflowRepository:
         except Exception as e:
             raise FirestoreError(f"Failed to approve workflow: {e}")
 
+    def _model_to_dict(self, model_obj: Any) -> Optional[Dict[str, Any]]:
+        """Convert Pydantic models or dict-like objects into serializable dicts."""
+        if model_obj is None:
+            return None
+
+        if hasattr(model_obj, "model_dump"):
+            return model_obj.model_dump()
+
+        if isinstance(model_obj, dict):
+            return model_obj
+
+        raise SerializationError(
+            f"Unsupported type for serialization: {type(model_obj).__name__}"
+        )
+
     def save_org_chart(
         self,
         workflow_id: str,
-        org_chart: AgentOrgChart,
-        agent_registry: Dict[str, Any],
-        tool_registry: Dict[str, Any],
+        org_chart: Any,
+        agent_registry: Any,
+        tool_registry: Any,
     ) -> None:
         """
         Save org chart and registries to Firestore.
@@ -226,18 +241,18 @@ class WorkflowRepository:
             if not doc.exists:
                 raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
 
-            # Serialize org chart
-            org_chart_dict = (
-                org_chart.model_dump() if hasattr(org_chart, "model_dump") else org_chart.dict()
-            )
+            # Serialize payloads
+            org_chart_dict = self._model_to_dict(org_chart)
+            agent_registry_dict = self._model_to_dict(agent_registry)
+            tool_registry_dict = self._model_to_dict(tool_registry)
 
             now = datetime.utcnow().isoformat() + "Z"
 
             # Update with org chart and registries
             doc_ref.update({
                 "orgChart": org_chart_dict,
-                "agentRegistry": agent_registry,
-                "toolRegistry": tool_registry,
+                "agentRegistry": agent_registry_dict,
+                "toolRegistry": tool_registry_dict,
                 "updatedAt": now,
             })
 
@@ -412,19 +427,22 @@ class WorkflowRepository:
                 analysis=analysis,
             )
 
+            org_chart_dict = self._model_to_dict(org_chart)
+            agent_registry_dict = self._model_to_dict(agent_registry)
+            tool_registry_dict = self._model_to_dict(tool_registry)
+
             # Save org chart via repository
             self.save_org_chart(
                 workflow_id=workflow_id,
-                org_chart=org_chart,
-                agent_registry=agent_registry,
-                tool_registry=tool_registry,
+                org_chart=org_chart_dict,
+                agent_registry=agent_registry_dict,
+                tool_registry=tool_registry_dict,
             )
 
             print(f"✓ Org design synthesis completed and saved for workflow {workflow_id}")
-            return org_chart, agent_registry, tool_registry
+            return org_chart_dict, agent_registry_dict, tool_registry_dict
 
         except Exception as e:
             # Log error but don't block approval
             print(f"Warning: Org design synthesis failed for workflow {workflow_id}: {e}")
             return None, None, None # Return Nones on failure
-

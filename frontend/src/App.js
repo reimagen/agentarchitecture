@@ -91,16 +91,20 @@ function App() {
       }
 
       const data = await response.json();
-      setAnalysisResult({
-        // The list endpoint only returns a subset of fields, so we need to merge
-        // what we get from the detail endpoint into the full analysisResult structure
-        ...analysisResult,
+      setAnalysisResult((prevResult) => ({
+        ...prevResult,
         workflow_id: workflowId,
         analysis: data.analysis,
         approvalStatus: data.approvalStatus,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
-      });
+        orgChart: data.orgChart,
+        agentRegistry: data.agentRegistry,
+        toolRegistry: data.toolRegistry,
+        originalText: data.originalText ?? prevResult?.originalText,
+        approvedAt: data.approvedAt ?? prevResult?.approvedAt,
+        approvedBy: data.approvedBy ?? prevResult?.approvedBy,
+      }));
       setSelectedWorkflowId(workflowId);
     } catch (err) {
       setError(err.message);
