@@ -6,9 +6,10 @@ import SummaryContainer from './components/workflow-display/SummaryContainer';
 import KeyInsights from './components/workflow-display/KeyInsights';
 import AnalyzedWorkflowsList from './components/AnalyzedWorkflowsList';
 import Approval from './components/workflow-actions/Approval'; // Import Approval component
-import DownloadButton from './components/workflow-actions/DownloadButton'; // Import DownloadButton component - No longer directly used, but the file exists
 import OrgGenerationCard from './components/workflow-actions/OrgGenerationCard'; // Import OrgGenerationCard component
 import { prepareWorkflowBody } from './utils/fileProcessor';
+
+const NEW_WORKFLOW_ID = '__new_workflow__';
 
 function App() {
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -17,7 +18,7 @@ function App() {
   const [workflows, setWorkflows] = useState([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
   const [sidebarError, setSidebarError] = useState(null);
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState(null);
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState(NEW_WORKFLOW_ID);
   const [isApproving, setIsApproving] = useState(false); // State for approval button
   const [isGeneratingOrgAssets, setIsGeneratingOrgAssets] = useState(false); // State for org asset generation
 
@@ -113,8 +114,13 @@ function App() {
     }
   };
 
+  const handleSelectNewWorkflow = () => {
+    setSelectedWorkflowId(NEW_WORKFLOW_ID);
+    setError(null);
+  };
+
   const handleApproveWorkflow = async () => {
-    if (!selectedWorkflowId) return;
+    if (!selectedWorkflowId || selectedWorkflowId === NEW_WORKFLOW_ID) return;
 
     setIsApproving(true);
     setIsGeneratingOrgAssets(true); // Set generating state to true
@@ -150,6 +156,8 @@ function App() {
   };
 
   console.log('Current analysisResult state:', analysisResult);
+  const isUploadView = selectedWorkflowId === NEW_WORKFLOW_ID;
+  const hasAnalysis = Boolean(analysisResult?.analysis) && !isUploadView;
 
   return (
     <div className="App">
@@ -164,41 +172,58 @@ function App() {
           loading={sidebarLoading}
           error={sidebarError}
           selectedWorkflowId={selectedWorkflowId}
+          onSelectNewWorkflow={handleSelectNewWorkflow}
+          isNewWorkflowSelected={isUploadView}
           onSelect={handleWorkflowSelect}
         />
 
         <div className="app-content">
           <main className="App-main">
-            <FileUpload onFileUpload={handleFileUpload} loading={loading} />
-
-            {error && <div className="error-message">{error}</div>}
-
-            {analysisResult && analysisResult.analysis && (
-              <div className="results-container">
-                <div className="results-grid">
-                  <div className="left-panel">
-                    <StepsList steps={analysisResult.analysis.steps} />
+            {isUploadView ? (
+              <div className="upload-panel">
+                <h2>Analyze New Workflow</h2>
+                <p>Upload a JSON, TXT, or YAML file to run a fresh workflow analysis.</p>
+                {error && <div className="error-message">{error}</div>}
+                <FileUpload onFileUpload={handleFileUpload} loading={loading} />
+              </div>
+            ) : hasAnalysis ? (
+              <>
+                {error && <div className="error-message">{error}</div>}
+                <div className="results-container">
+                  <div className="results-grid">
+                    <div className="left-panel">
+                      <StepsList steps={analysisResult.analysis.steps} />
+                    </div>
+                    <div className="right-panel">
+                      <SummaryContainer summary={analysisResult.analysis.summary} />
+                      <KeyInsights insights={analysisResult.analysis.key_insights} />
+                      {(analysisResult.approvalStatus === 'PENDING' || analysisResult.approvalStatus === 'APPROVED') && (
+                        <Approval
+                          onApprove={handleApproveWorkflow}
+                          isLoading={isApproving}
+                          approvalStatus={analysisResult.approvalStatus}
+                        />
+                      )}
+                      {analysisResult && (
+                        <OrgGenerationCard
+                          approvalStatus={analysisResult.approvalStatus}
+                          orgChart={analysisResult.orgChart}
+                          agentRegistry={analysisResult.agentRegistry}
+                          toolRegistry={analysisResult.toolRegistry}
+                          isGenerating={isGeneratingOrgAssets}
+                        />
+                      )}
+                    </div>
                   </div>
-                  <div className="right-panel">
-                    <SummaryContainer summary={analysisResult.analysis.summary} />
-                    <KeyInsights insights={analysisResult.analysis.key_insights} />
-                                        {(analysisResult.approvalStatus === 'PENDING' || analysisResult.approvalStatus === 'APPROVED') && (
-                                          <Approval
-                                            onApprove={handleApproveWorkflow}
-                                            isLoading={isApproving}
-                                            approvalStatus={analysisResult.approvalStatus}
-                                          />
-                                        )}
-                                        {analysisResult && (
-                                          <OrgGenerationCard
-                                            approvalStatus={analysisResult.approvalStatus}
-                                            orgChart={analysisResult.orgChart}
-                                            agentRegistry={analysisResult.agentRegistry}
-                                            toolRegistry={analysisResult.toolRegistry}
-                                            isGenerating={isGeneratingOrgAssets}
-                                          />
-                                        )}                  </div>
                 </div>
+              </>
+            ) : (
+              <div className="placeholder-panel">
+                {loading ? (
+                  <p>Loading workflow analysis...</p>
+                ) : (
+                  <p>Select a workflow from the sidebar to view its analysis.</p>
+                )}
               </div>
             )}
           </main>
