@@ -97,6 +97,68 @@
   color: #666;
 }
 
+.metric-label--with-tooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltip-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tooltip-icon {
+  font-size: 12px;
+  line-height: 1;
+  color: #4b5563;
+  cursor: default;
+  border: 1px solid #cbd5f5;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #eef2ff;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #111827;
+  color: #f9fafb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  width: 220px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #111827 transparent transparent transparent;
+}
+
+.tooltip-trigger:hover .tooltip-content,
+.tooltip-trigger:focus-within .tooltip-content {
+  opacity: 1;
+}
+
 .metric-bar {
   height: 6px;
   background-color: #f0f0f0;
@@ -113,6 +175,12 @@
   font-weight: 600;
   color: #333;
   font-size: 12px;
+}
+
+.step-card ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style-position: outside; /* Keep bullets outside so wrapped lines align with text */
 }
 
 .tools-section {

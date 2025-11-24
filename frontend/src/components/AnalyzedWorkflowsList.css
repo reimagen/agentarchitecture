@@ -1,6 +1,6 @@
 .analyzed-workflows {
   width: 320px;
-  background-color: #1a1d21;
+  background-color: #525966;
   color: #e6e6e6;
   border-right: 1px solid #333;
   display: flex;
@@ -75,7 +75,6 @@
 
 .analyzed-workflows__item-id {
   font-weight: 600;
-  font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
 }
 

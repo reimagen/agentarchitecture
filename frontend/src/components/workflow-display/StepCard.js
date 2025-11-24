@@ -107,7 +107,15 @@ const StepCard = React.forwardRef(({ step }, ref) => {
         </div>
 
         <div className="metric">
-          <span className="metric-label">Determinism:</span>
+          <span className="metric-label metric-label--with-tooltip">
+            Determinism:
+            <span className="tooltip-trigger" tabIndex={0}>
+              <span className="tooltip-icon" aria-hidden="true">i</span>
+              <span className="tooltip-content" role="tooltip">
+                How predictable a step's outcome is when given the same inputs.
+              </span>
+            </span>
+          </span>
           <div className="metric-bar">
             <div
               className="metric-fill"

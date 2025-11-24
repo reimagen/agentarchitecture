@@ -11,6 +11,56 @@ import { prepareWorkflowBody } from './utils/fileProcessor';
 
 const NEW_WORKFLOW_ID = '__new_workflow__';
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchJsonWithRetry = async (
+  url,
+  options = {},
+  { fallbackErrorMessage = 'Request failed', retries = 1, retryDelay = 500 } = {}
+) => {
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        let message = fallbackErrorMessage;
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.detail) {
+            message = typeof errorBody.detail === 'string' ? errorBody.detail : fallbackErrorMessage;
+          } else if (errorBody?.message) {
+            message = errorBody.message;
+          }
+        } catch {
+          // ignore body parse failures
+        }
+
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
+      }
+
+      try {
+        return await response.json();
+      } catch {
+        return null;
+      }
+    } catch (err) {
+      const isNetworkError = err?.name === 'TypeError';
+      const shouldRetry = isNetworkError && attempt < retries;
+      if (!shouldRetry) {
+        throw err;
+      }
+
+      lastError = err;
+      await delay(retryDelay * (attempt + 1));
+    }
+  }
+
+  throw lastError || new Error(fallbackErrorMessage);
+};
+
 function App() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -26,29 +76,44 @@ function App() {
   const [isEditingWorkflowName, setIsEditingWorkflowName] = useState(false);
   const [workflowNameInput, setWorkflowNameInput] = useState('');
   const [isRenamingWorkflow, setIsRenamingWorkflow] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [toasts, setToasts] = useState([]);
   const stepRefs = useRef({});
   const highlightTimeouts = useRef({});
 
   const WORKFLOW_API_BASE = 'http://localhost:8000/workflows';
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const addToast = useCallback(
+    (message, variant = 'error') => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setToasts((prev) => [...prev, { id, message, variant }]);
+      setTimeout(() => removeToast(id), 4000);
+    },
+    [removeToast]
+  );
 
   const fetchWorkflowList = useCallback(async () => {
     setSidebarLoading(true);
     setSidebarError(null);
 
     try {
-      const response = await fetch(WORKFLOW_API_BASE);
-      if (!response.ok) {
-        throw new Error('Failed to load workflows');
-      }
-
-      const data = await response.json();
+      const data = await fetchJsonWithRetry(
+        WORKFLOW_API_BASE,
+        {},
+        { fallbackErrorMessage: 'Failed to load workflows', retries: 2, retryDelay: 400 }
+      );
       setWorkflows(data.workflows || []);
     } catch (err) {
       setSidebarError(err.message);
+      addToast(err.message);
     } finally {
       setSidebarLoading(false);
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     fetchWorkflowList();
@@ -61,19 +126,17 @@ function App() {
     try {
       const body = await prepareWorkflowBody(file);
 
-      const response = await fetch(WORKFLOW_API_BASE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const data = await fetchJsonWithRetry(
+        WORKFLOW_API_BASE,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
         },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to analyze workflow');
-      }
-
-      const data = await response.json();
+        { fallbackErrorMessage: 'Failed to analyze workflow', retries: 1, retryDelay: 500 }
+      );
       setAnalysisResult(data);
       setSelectedWorkflowId(data.workflow_id);
       setShowDeleteConfirm(false);
@@ -81,6 +144,7 @@ function App() {
       fetchWorkflowList();
     } catch (err) {
       setError(err.message);
+      addToast(err.message);
     } finally {
       setLoading(false);
     }
@@ -95,12 +159,11 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch(`${WORKFLOW_API_BASE}/${workflowId}`);
-      if (!response.ok) {
-        throw new Error('Failed to load workflow analysis');
-      }
-
-      const data = await response.json();
+      const data = await fetchJsonWithRetry(
+        `${WORKFLOW_API_BASE}/${workflowId}`,
+        {},
+        { fallbackErrorMessage: 'Failed to load workflow analysis', retries: 1, retryDelay: 400 }
+      );
       setAnalysisResult((prevResult) => ({
         ...prevResult,
         workflow_id: workflowId,
@@ -114,13 +177,14 @@ function App() {
         originalText: data.originalText ?? prevResult?.originalText,
         approvedAt: data.approvedAt ?? prevResult?.approvedAt,
         approvedBy: data.approvedBy ?? prevResult?.approvedBy,
-        workflowName: data.workflowName ?? prevResult?.workflowName,
+        workflowName: data.workflowName ?? null,
       }));
       setSelectedWorkflowId(workflowId);
       setShowDeleteConfirm(false);
       setIsEditingWorkflowName(false);
     } catch (err) {
       setError(err.message);
+      addToast(err.message);
     } finally {
       setLoading(false);
     }
@@ -142,19 +206,17 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch(`${WORKFLOW_API_BASE}/${selectedWorkflowId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const data = await fetchJsonWithRetry(
+        `${WORKFLOW_API_BASE}/${selectedWorkflowId}/approve`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ approved_by: 'frontend_user' }), // Example user
         },
-        body: JSON.stringify({ approved_by: 'frontend_user' }), // Example user
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to approve workflow');
-      }
-
-      const data = await response.json();
+        { fallbackErrorMessage: 'Failed to approve workflow', retries: 1, retryDelay: 500 }
+      );
       // Merge the approval response with the existing analysisResult to preserve the 'analysis' field
       setAnalysisResult((prevResult) => ({
         ...prevResult,
@@ -165,6 +227,7 @@ function App() {
       fetchWorkflowList();
     } catch (err) {
       setError(err.message);
+      addToast(err.message);
     } finally {
       setIsApproving(false);
       setIsGeneratingOrgAssets(false); // Reset generating state
@@ -189,13 +252,13 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch(`${WORKFLOW_API_BASE}/${selectedWorkflowId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete workflow');
-      }
+      await fetchJsonWithRetry(
+        `${WORKFLOW_API_BASE}/${selectedWorkflowId}?hard_delete=true`,
+        {
+          method: 'DELETE',
+        },
+        { fallbackErrorMessage: 'Failed to delete workflow', retries: 1, retryDelay: 400 }
+      );
 
       setAnalysisResult(null);
       setSelectedWorkflowId(NEW_WORKFLOW_ID);
@@ -205,6 +268,7 @@ function App() {
       fetchWorkflowList();
     } catch (err) {
       setError(err.message);
+      addToast(err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -232,6 +296,7 @@ function App() {
     const trimmedName = (workflowNameInput || '').trim();
     if (!trimmedName) {
       setError('Workflow name cannot be empty');
+      addToast('Workflow name cannot be empty');
       return;
     }
 
@@ -239,19 +304,17 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch(`${WORKFLOW_API_BASE}/${selectedWorkflowId}/name`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
+      const data = await fetchJsonWithRetry(
+        `${WORKFLOW_API_BASE}/${selectedWorkflowId}/name`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ workflow_name: trimmedName }),
         },
-        body: JSON.stringify({ workflow_name: trimmedName }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update workflow name');
-      }
-
-      const data = await response.json();
+        { fallbackErrorMessage: 'Failed to update workflow name', retries: 1, retryDelay: 400 }
+      );
       setAnalysisResult((prevResult) =>
         prevResult
           ? {
@@ -266,6 +329,7 @@ function App() {
       fetchWorkflowList();
     } catch (err) {
       setError(err.message);
+      addToast(err.message);
     } finally {
       setIsRenamingWorkflow(false);
     }
@@ -306,12 +370,27 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const handleScroll = () => {
+      const shouldShow = window.scrollY > 300;
+      setShowBackToTop(shouldShow);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleBackToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
     if (!isEditingWorkflowName) {
       setWorkflowNameInput(analysisResult?.workflowName || '');
     }
   }, [analysisResult?.workflowName, analysisResult?.workflow_id, isEditingWorkflowName]);
 
-  console.log('Current analysisResult state:', analysisResult);
   const isUploadView = selectedWorkflowId === NEW_WORKFLOW_ID;
   const hasAnalysis = Boolean(analysisResult?.analysis) && !isUploadView;
   const workflowDisplayName = analysisResult?.workflowName || analysisResult?.workflow_id;
@@ -344,7 +423,8 @@ function App() {
             {isUploadView ? (
               <div className="card card--spacious upload-panel">
                 <h2 className="card-title">Analyze New Workflow</h2>
-                <p>Upload a workflow file to analyze automation potential.</p>
+                <p>Upload a workflow file to analyze its automation potential.</p>
+                <p>Your analysis will appear in the left pane when ready.</p>
                 {error && <div className="error-message">{error}</div>}
                 <FileUpload onFileUpload={handleFileUpload} loading={loading} />
               </div>
@@ -388,7 +468,6 @@ function App() {
                   ) : (
                     <>
                       <div className="workflow-title-display">
-                        <span className="workflow-title-label">Workflow:</span>
                         <h2 className="workflow-detail-title">
                           {workflowDisplayName || 'Workflow Details'}
                         </h2>
@@ -497,6 +576,23 @@ function App() {
             )}
           </main>
         </div>
+      </div>
+      {showBackToTop && (
+        <button
+          type="button"
+          className="back-to-top"
+          onClick={handleBackToTop}
+          aria-label="Back to top"
+        >
+          ↑ Back to top
+        </button>
+      )}
+      <div className="toast-container" aria-live="assertive" aria-atomic="true">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast toast--${toast.variant}`}>
+            {toast.message}
+          </div>
+        ))}
       </div>
     </div>
   );
