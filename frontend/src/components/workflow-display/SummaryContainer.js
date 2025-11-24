@@ -14,10 +14,9 @@ function SummaryContainer({ summary }) {
       icon: '📋',
     },
     {
-      label: 'Automatable',
+      label: 'Automatable Steps',
       value: summary.automatable_count,
       icon: '⚙️',
-      subtitle: `${Math.round((summary.automatable_count / summary.total_steps) * 100)}%`,
     },
     {
       label: 'Agent Compatible',
@@ -43,7 +42,7 @@ function SummaryContainer({ summary }) {
 
   return (
     <div className="summary-container">
-      <h2>Summary</h2>
+      <h2 className="card-title">Summary</h2>
       <div className="summary-grid">
         {stats.map((stat, index) => (
           <div key={index} className="summary-stat">
@@ -57,10 +56,18 @@ function SummaryContainer({ summary }) {
         ))}
       </div>
 
+      {summary.automation_summary.overall_assessment && (
+        <div className="overall-assessment">
+          <h3>Overall Assessment</h3>
+          <p>{summary.automation_summary.overall_assessment}</p>
+        </div>
+      )}
+      
       <div className="automation-potential">
         <h3>Full Automation Potential</h3>
         <Meter value={summary.automation_potential || 0} />
       </div>
+
     </div>
   );
 }

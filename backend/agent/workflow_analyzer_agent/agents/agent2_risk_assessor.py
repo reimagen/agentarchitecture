@@ -3,6 +3,15 @@ import json
 import time
 from typing import List, Dict, Any, Optional, Callable
 
+try:
+    from urllib3.exceptions import ReadError, ProtocolError
+except Exception:  # pragma: no cover - fallback for older urllib3 versions
+    class ReadError(Exception):
+        """Fallback ReadError when urllib3 version lacks this class."""
+
+    class ProtocolError(Exception):
+        """Fallback ProtocolError when urllib3 version lacks this class."""
+
 from ..prompts import AGENT2_SYSTEM_PROMPT
 
 
@@ -94,9 +103,7 @@ For each step:
 
 Respond with ONLY valid JSON, no markdown or explanations."""
 
-            # Call Gemini API client with JSON response type
-            response = self.client.models.generate_content(
-                model=self.model,
+            response = self._generate_with_retry(
                 contents=[
                     {
                         "role": "user",
@@ -105,10 +112,7 @@ Respond with ONLY valid JSON, no markdown or explanations."""
                             {"text": user_prompt},
                         ],
                     }
-                ],
-                config={
-                    "response_mime_type": "application/json",
-                },
+                ]
             )
 
             # Extract and parse response
@@ -183,6 +187,50 @@ Respond with ONLY valid JSON, no markdown or explanations."""
             )
             session.add_error(type(e).__name__, str(e), agent="agent_2")
             return []
+
+    def _generate_with_retry(self, contents: List[Dict[str, Any]], max_attempts: int = 3):
+        """
+        Call Gemini with basic retry/backoff to absorb transient network resets.
+        """
+        backoff_seconds = 2
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return self.client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config={"response_mime_type": "application/json"},
+                )
+            except Exception as exc:
+                if not self._is_retryable_error(exc) or attempt == max_attempts:
+                    raise
+
+                wait_time = backoff_seconds * attempt
+                self.logger.warning(
+                    "Agent 2: Retrying risk assessment call after transient error",
+                    attempt=attempt,
+                    wait_seconds=wait_time,
+                    error_type=type(exc).__name__,
+                    error_message=str(exc),
+                )
+                time.sleep(wait_time)
+
+        raise RuntimeError("Risk assessment retries exhausted")
+
+    def _is_retryable_error(self, exc: Exception) -> bool:
+        """Check whether an exception should trigger a retry."""
+        retryable_types = (ReadError, ProtocolError, ConnectionError, TimeoutError)
+        if isinstance(exc, retryable_types):
+            return True
+
+        message = str(exc)
+        retryable_signatures = [
+            "Connection reset by peer",
+            "RST_STREAM",
+            "503",
+            "temporarily unavailable",
+        ]
+        return any(signature in message for signature in retryable_signatures)
 
     def _process_risk_assessments(
         self,

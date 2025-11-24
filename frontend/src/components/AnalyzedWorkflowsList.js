@@ -38,8 +38,8 @@ function AnalyzedWorkflowsList({
                 {workflow.createdAt ? new Date(workflow.createdAt).toLocaleString() : 'Unknown date'}
               </span>
               {workflow.approvalStatus && (
-                <span className={`analyzed-workflows__badge status-${workflow.approvalStatus.toLowerCase()}`}>
-                  {workflow.approvalStatus}
+                <span className={`analyzed-workflows__badge status-${workflow.approvalStatus.toLowerCase().trim()}`}>
+                  {workflow.approvalStatus === 'PENDING' ? 'Pending Approval' : workflow.approvalStatus}
                 </span>
               )}
             </button>

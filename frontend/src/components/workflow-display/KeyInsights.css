@@ -1,16 +1,5 @@
 .insights-container {
-  background: white;
-  border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.insights-container h2 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  color: #333;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 8px;
 }
 
 .insights-list {
@@ -116,4 +105,14 @@
   font-size: 12px;
   font-weight: 600;
   border: 1px solid #0066cc;
+  cursor: pointer;
+  text-transform: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.step-tag:hover,
+.step-tag:focus-visible {
+  background-color: #0066cc;
+  color: white;
+  outline: none;
 }

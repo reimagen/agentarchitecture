@@ -228,7 +228,7 @@ backend/
 │       ├── types.py            # Type definitions
 │       ├── agents/             # The 3 agents
 │       │   ├── agent1_parser.py
-│       │   ├── agent2_risk_assessor.py
+│       │   ├── agent2_1_assessor.py
 │       │   └── agent3_automation_analyzer.py
 │       ├── tools/              # Custom tools
 │       │   ├── api_lookup.py

@@ -1,7 +1,7 @@
 import React from 'react';
 import './StepCard.css';
 
-function StepCard({ step }) {
+const StepCard = React.forwardRef(({ step }, ref) => {
   const getRiskColor = (riskLevel) => {
     switch (riskLevel?.toLowerCase()) {
       case 'critical':
@@ -32,7 +32,11 @@ function StepCard({ step }) {
   };
 
   return (
-    <div className="step-card">
+    <div
+      ref={ref}
+      className="step-card"
+      id={step.id ? `step-${step.id}` : undefined}
+    >
       <div className="card-header">
         <div className="card-left-section">
           <h3 className="step-id">{formatStepId(step.id)}</h3>
@@ -60,6 +64,34 @@ function StepCard({ step }) {
       </div>
 
       <div className="step-metrics">
+        <div className="metric">
+          <span className="metric-label">Inputs:</span>
+          {
+            step.inputs.length === 0 ? "N/A" :
+              <ul>
+                {
+                  step.inputs.map((input, i) => {
+                    return <li key={i} className="metric-value">{input || 'N/A'}</li>
+                  })
+                }
+              </ul>
+          }
+        </div>
+
+        <div className="metric">
+          <span className="metric-label">Outputs:</span>
+          {
+            step.outputs.length === 0 ? "N/A" :
+              <ul>
+                {
+                  step.outputs.map((output, i) => {
+                    return <li key={i} className="metric-value">{output || 'N/A'}</li>
+                  })
+                }
+              </ul>
+          }
+        </div>
+
         <div className="metric">
           <span className="metric-label">Automation Compatibility:</span>
           <div className="metric-bar">
@@ -89,6 +121,22 @@ function StepCard({ step }) {
         </div>
 
         <div className="metric">
+          <span className="metric-label">Notes:</span>
+          <span className="metric-value">{step.implementation_notes || 'N/A'}</span>
+        </div>
+
+        <div className="metric">
+          <span className="metric-label">Migitations:</span>
+          <ul>
+            {
+              step.mitigation_suggestions.map((ms, i) => {
+                return <li key={i} className="metric-value">{ms || 'N/A'}</li>
+              })
+            }
+          </ul>
+        </div>
+
+        <div className="metric">
           <span className="metric-label">Agent Type:</span>
           <span className="metric-value">{step.agent_type || 'N/A'}</span>
         </div>
@@ -108,6 +156,8 @@ function StepCard({ step }) {
       )}
     </div>
   );
-}
+});
+
+StepCard.displayName = 'StepCard';
 
 export default StepCard;

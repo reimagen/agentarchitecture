@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
 
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent.workflow_analyzer_agent.types import WorkflowAnalysis
-from agent.org_design.types import AgentOrgChart
+from agent.org_design.types import AgentOrgChart, AgentRegistry, ToolRegistry
 from database.exceptions import (
     WorkflowNotFoundError,
     InvalidApprovalStateError,
@@ -177,24 +177,49 @@ class WorkflowRepository:
                 "updatedAt": now,
             })
 
-            # Auto-trigger org design synthesis
-            self._trigger_org_design_synthesis(workflow_id)
+            # Auto-trigger org design synthesis and capture results
+            org_chart, agent_registry, tool_registry = self._trigger_org_design_synthesis(workflow_id)
 
-            # Retrieve and return updated document
-            updated_doc = doc_ref.get()
-            return updated_doc.to_dict()
+            # Construct and return the updated document data directly
+            # This avoids a race condition by not re-fetching from Firestore immediately
+            return {
+                "workflow_id": workflow_id,
+                "approvalStatus": "APPROVED",
+                "approvedBy": approved_by,
+                "approvedAt": now,
+                "updatedAt": now,
+                "orgChart": org_chart,
+                "agentRegistry": agent_registry,
+                "toolRegistry": tool_registry,
+                "workflowName": doc.get("workflowName"),
+            }
 
         except (WorkflowNotFoundError, InvalidApprovalStateError):
             raise
         except Exception as e:
             raise FirestoreError(f"Failed to approve workflow: {e}")
 
+    def _model_to_dict(self, model_obj: Any) -> Optional[Dict[str, Any]]:
+        """Convert Pydantic models or dict-like objects into serializable dicts."""
+        if model_obj is None:
+            return None
+
+        if hasattr(model_obj, "model_dump"):
+            return model_obj.model_dump()
+
+        if isinstance(model_obj, dict):
+            return model_obj
+
+        raise SerializationError(
+            f"Unsupported type for serialization: {type(model_obj).__name__}"
+        )
+
     def save_org_chart(
         self,
         workflow_id: str,
-        org_chart: AgentOrgChart,
-        agent_registry: Dict[str, Any],
-        tool_registry: Dict[str, Any],
+        org_chart: Any,
+        agent_registry: Any,
+        tool_registry: Any,
     ) -> None:
         """
         Save org chart and registries to Firestore.
@@ -217,18 +242,18 @@ class WorkflowRepository:
             if not doc.exists:
                 raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
 
-            # Serialize org chart
-            org_chart_dict = (
-                org_chart.model_dump() if hasattr(org_chart, "model_dump") else org_chart.dict()
-            )
+            # Serialize payloads
+            org_chart_dict = self._model_to_dict(org_chart)
+            agent_registry_dict = self._model_to_dict(agent_registry)
+            tool_registry_dict = self._model_to_dict(tool_registry)
 
             now = datetime.utcnow().isoformat() + "Z"
 
             # Update with org chart and registries
             doc_ref.update({
                 "orgChart": org_chart_dict,
-                "agentRegistry": agent_registry,
-                "toolRegistry": tool_registry,
+                "agentRegistry": agent_registry_dict,
+                "toolRegistry": tool_registry_dict,
                 "updatedAt": now,
             })
 
@@ -380,19 +405,42 @@ class WorkflowRepository:
         except Exception as e:
             raise FirestoreError(f"Failed to delete workflow: {e}")
 
-    def _trigger_org_design_synthesis(self, workflow_id: str) -> None:
+    def update_workflow_name(self, workflow_id: str, workflow_name: str) -> Dict[str, Any]:
+        """Update the user-friendly workflow name."""
+        sanitized_name = (workflow_name or "").strip()
+        if not sanitized_name:
+            raise ValueError("workflow_name must be a non-empty string")
+
+        try:
+            doc_ref = self.db.collection(self.collection_name).document(workflow_id)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
+
+            now = datetime.utcnow().isoformat() + "Z"
+            doc_ref.update({
+                "workflowName": sanitized_name,
+                "updatedAt": now,
+            })
+
+            updated_doc = doc_ref.get()
+            return updated_doc.to_dict()
+
+        except WorkflowNotFoundError:
+            raise
+        except ValueError:
+            raise
+        except Exception as e:
+            raise FirestoreError(f"Failed to update workflow name: {e}")
+
+    def _trigger_org_design_synthesis(self, workflow_id: str) -> Tuple[AgentOrgChart, Dict, Dict]:
         """
         Trigger org design synthesis after approval.
-
-        This method is called automatically after a workflow is approved.
-        It retrieves the analysis and runs org design synthesis.
-
-        Args:
-            workflow_id: Unique workflow identifier
-
-        Note:
-            - Org design synthesis errors are logged but don't fail the approval
-            - Synthesis result is auto-saved to Firestore via save_org_chart()
+        ...
+        Returns:
+            Tuple[AgentOrgChart, Dict, Dict]: The generated org_chart, agent_registry, and tool_registry.
+            Returns (None, None, None) if analysis cannot be retrieved or synthesis fails.
         """
         try:
             # Import here to avoid circular imports
@@ -402,23 +450,29 @@ class WorkflowRepository:
             analysis = self.get_workflow_analysis(workflow_id)
             if not analysis:
                 print(f"Warning: Could not retrieve analysis for workflow {workflow_id}")
-                return
+                return None, None, None # Return Nones on failure
 
             # Run org design synthesis
             org_chart, agent_registry, tool_registry = run_org_design_for_analysis(
                 analysis=analysis,
             )
 
+            org_chart_dict = self._model_to_dict(org_chart)
+            agent_registry_dict = self._model_to_dict(agent_registry)
+            tool_registry_dict = self._model_to_dict(tool_registry)
+
             # Save org chart via repository
             self.save_org_chart(
                 workflow_id=workflow_id,
-                org_chart=org_chart,
-                agent_registry=agent_registry,
-                tool_registry=tool_registry,
+                org_chart=org_chart_dict,
+                agent_registry=agent_registry_dict,
+                tool_registry=tool_registry_dict,
             )
 
             print(f"✓ Org design synthesis completed and saved for workflow {workflow_id}")
+            return org_chart_dict, agent_registry_dict, tool_registry_dict
 
         except Exception as e:
             # Log error but don't block approval
             print(f"Warning: Org design synthesis failed for workflow {workflow_id}: {e}")
+            return None, None, None # Return Nones on failure

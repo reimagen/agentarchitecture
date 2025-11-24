@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './KeyInsights.css';
 
-function KeyInsights({ insights }) {
+function KeyInsights({ insights, onStepClick }) {
   const [expandedIndex, setExpandedIndex] = useState(null);
 
   if (!insights || insights.length === 0) {
@@ -62,7 +62,7 @@ function KeyInsights({ insights }) {
 
   return (
     <div className="insights-container">
-      <h2>Key Insights</h2>
+      <h2 className="card-title">Key Insights</h2>
       <div className="insights-list">
         {insights.map((insight, index) => (
           <div
@@ -99,9 +99,14 @@ function KeyInsights({ insights }) {
                   <div className="step-tags">
                     {insight.affected_steps &&
                       insight.affected_steps.map((step, stepIndex) => (
-                        <span key={stepIndex} className="step-tag">
+                        <button
+                          key={stepIndex}
+                          type="button"
+                          className="step-tag"
+                          onClick={() => onStepClick && onStepClick(step)}
+                        >
                           {step}
-                        </span>
+                        </button>
                       ))}
                   </div>
                 </div>

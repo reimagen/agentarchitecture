@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DownloadButton = ({ fileName, jsonContent, buttonText = "Download JSON" }) => {
+const DownloadButton = ({ fileName, jsonContent, buttonText = "Download JSON", icon: IconComponent }) => {
   const handleDownload = () => {
     if (!jsonContent) {
       console.error("No content to download.");
@@ -17,8 +17,9 @@ const DownloadButton = ({ fileName, jsonContent, buttonText = "Download JSON" })
   };
 
   return (
-    <button onClick={handleDownload} disabled={!jsonContent}>
-      {buttonText}
+    <button onClick={handleDownload} disabled={!jsonContent} className="download-button-with-icon">
+      {IconComponent && <IconComponent />}
+      <span>{buttonText}</span>
     </button>
   );
 };
