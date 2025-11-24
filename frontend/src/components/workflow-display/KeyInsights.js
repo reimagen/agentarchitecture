@@ -8,6 +8,22 @@ function KeyInsights({ insights, onStepClick }) {
     return <div className="insights-container">No insights available</div>;
   }
 
+  const formatStepLabel = (step) => {
+    if (!step || typeof step !== 'string') {
+      return step;
+    }
+
+    const normalized = step.trim();
+    if (/^step_\d+$/i.test(normalized)) {
+      return `Step ${normalized.split('_')[1]}`;
+    }
+
+    return normalized
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  };
+
   const getInsightColor = (priority, title) => {
     if (title.includes("Strong Automation Potential")) {
       return '#28a745'; // Green for strong
@@ -105,7 +121,7 @@ function KeyInsights({ insights, onStepClick }) {
                           className="step-tag"
                           onClick={() => onStepClick && onStepClick(step)}
                         >
-                          {step}
+                          {formatStepLabel(step)}
                         </button>
                       ))}
                   </div>

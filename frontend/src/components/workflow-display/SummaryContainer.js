@@ -56,7 +56,7 @@ function SummaryContainer({ summary }) {
         ))}
       </div>
 
-      {summary.automation_summary.overall_assessment && (
+      {summary.automation_summary?.overall_assessment && (
         <div className="overall-assessment">
           <h3>Overall Assessment</h3>
           <p>{summary.automation_summary.overall_assessment}</p>

@@ -22,6 +22,7 @@ AgentArchitecture provides an intelligent workflow analysis platform that:
 4. **Maps to agent types** appropriate for each step (adk_base, agentic_rag, TOOL, HUMAN)
 5. **Generates org charts** and tool registries for agent deployment
 6. **Surfaces insights** with actionable recommendations for optimization
+7. **Synthesizes automation roadmaps** with quick wins and phased plans through a dedicated summarizer agent
 
 ## Architecture
 
@@ -30,21 +31,35 @@ AgentArchitecture provides an intelligent workflow analysis platform that:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                       Frontend (React)                       │
-│  - File upload, step analysis, dashboard, insights         │
+│  - File upload, dashboards, insights, approvals            │
 └──────────────────┬──────────────────────────────────────────┘
-                   │
-                   │ REST API
-                   │
+                  │
+                  │ REST API
+                  │
 ┌──────────────────▼──────────────────────────────────────────┐
 │                   Backend (FastAPI)                          │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │    Workflow Analyzer Orchestrator                      │ │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │ │
-│  │  │ Agent 1:     │  │ Agent 2:     │  │ Agent 3:     │ │ │
-│  │  │ Parser       │  │ Risk         │  │ Automation   │ │ │
-│  │  │              │  │ Assessor     │  │ Analyzer     │ │ │
-│  │  │ (Sequential) │  │ (Parallel)   │  │ (Parallel)   │ │ │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘ │ │
+│  │         Workflow Analyzer Orchestrator                 │ │
+│  │        ┌──────────────┐                               │ │
+│  │        │ Agent 1:     │                               │ │
+│  │        │ Parser       │                               │ │
+│  │        │ (Sequential) │                               │ │
+│  │        └────┬────┬────┘                               │ │
+│  │             │    │                                    │ │
+│  │  ┌──────────▼┐   ┌▼──────────────┐                   │ │
+│  │  │ Agent 2:  │   │ Agent 3:     │                   │ │
+│  │  │ Risk      │   │ Automation   │                   │ │
+│  │  │ Assessor  │   │ Analyzer     │                   │ │
+│  │  │ (Parallel)│   │ (Parallel)   │                   │ │
+│  │  └───────────┘   └──────────────┘                   │ │
+│  │         │  (risks → session)    │ (automation → session)│ │
+│  │          └────────┬─────────────┘                       │ │
+│  │                   ▼                                    │ │
+│  │          ┌──────────────────────┐                      │ │
+│  │          │ Agent 4: Summarizer  │                      │ │
+│  │          │ (reads session data) │                      │ │
+│  │          │ Quick wins & roadmap │                      │ │
+│  │          └──────────────────────┘                      │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                          │                                   │
 │  ┌────────────────────────▼──────────────────────────────┐ │
@@ -52,46 +67,53 @@ AgentArchitecture provides an intelligent workflow analysis platform that:
 │  │  - AgentOrgChart  - AgentRegistry  - ToolRegistry    │ │
 │  └───────────────────────────────────────────────────────┘ │
 └──────────────────┬──────────────────────────────────────────┘
-                   │
-                   │ Persistence
-                   │
-         ┌─────────▼──────────┐
-         │ Firebase/Firestore │
-         │   (Database)       │
-         └────────────────────┘
+                  │
+                  │ Persistence
+                  │
+        ┌─────────▼──────────┐
+        │ Firebase/Firestore │
+        │   (Database)       │
+        └────────────────────┘
 ```
 
 ### Backend Architecture
 
-The backend uses a **distributed multi-agent system** orchestrated to analyze workflows in parallel where possible:
+The backend uses a **distributed multi-agent system** with a shared `SessionState` so each agent can write/read intermediate results:
+
 #### Orchestrator: WorkflowAnalyzerOrchestrator
-- **Coordinates** Agent execution with dependency management
-- **Merges** results from all agents into unified `WorkflowAnalysis`
-- **Auto-saves** to Firestore with distributed tracing
-- **Tracks** session metadata and execution metrics
+- **Coordinates** the sequential/parallel execution plan with asyncio tasks
+- **Provides** a shared `SessionState` object where agents drop their outputs (parsed steps, risks, automation, summary)
+- **Merges** the session data into a `WorkflowAnalysis` DTO and saves it to Firestore when configured
+- **Tracks** tracing/metrics and retries transient agent failures
 - **File**: `backend/agent/workflow_analyzer_agent/orchestrator.py`
 
 #### Agent 1: Workflow Parser (Sequential)
-- **Purpose**: Extract structured workflow information
+- **Purpose**: Extract structured workflow information that seeds every other agent
 - **Inputs**: Natural language workflow description
-- **Outputs**: Parsed steps with ID, description, inputs, outputs, dependencies
+- **Outputs**: `session.parsed_steps = {"steps": [...]}` containing IDs, descriptions, dependencies, inputs/outputs
 - **File**: `backend/agent/workflow_analyzer_agent/agents/agent1_parser.py`
-- **Execution**: Sequential (required before downstream analysis)
+- **Execution**: Sequential first step; downstream agents bail if this fails
 
 #### Agent 2: Risk Assessor (Parallel)
-- **Purpose**: Evaluate compliance, security, and operational risks
-- **Inputs**: Parsed workflow steps
-- **Outputs**: Risk levels (LOW/MEDIUM/HIGH/CRITICAL), compliance flags, HITL requirements
+- **Purpose**: Evaluate compliance, security, and HITL risks per step
+- **Inputs**: Parsed steps from `session.parsed_steps`
+- **Outputs**: `session.risks = {"risk_assessments": [...]}` with risk levels, confidence, mitigation, optional compliance tool lookups
 - **File**: `backend/agent/workflow_analyzer_agent/agents/agent2_risk_assessor.py`
-- **Execution**: Parallel (independent of Agent 3)
+- **Execution**: Runs in parallel with Agent 3 once Agent 1 finishes
 
 #### Agent 3: Automation Analyzer (Parallel)
-- **Purpose**: Determine automation feasibility and suitable agent types
-- **Inputs**: Parsed workflow steps
-- **Outputs**: Automation scores (0.0-1.0), determinism scores, agent type mapping, tool suggestions
+- **Purpose**: Determine automation feasibility, determinism, suggested agent types & tool hooks
+- **Inputs**: Parsed steps plus any risk context already written by Agent 2
+- **Outputs**: `session.automation = {"automation_analyses": [...]}` with feasibility scores, determinism, API/tool hints, implementation notes
 - **File**: `backend/agent/workflow_analyzer_agent/agents/agent3_automation_analyzer.py`
-- **Execution**: Parallel (independent of Agent 2)
+- **Execution**: Parallel with Agent 2; uses tool calls (e.g., API lookup) when needed
 
+#### Agent 4: Automation Summarizer (Sequential)
+- **Purpose**: Read the combined session and synthesize an automation roadmap (overall assessment, blockers, quick wins, phased plan)
+- **Inputs**: Parsed steps + risk assessments + automation analyses already stored in the session
+- **Outputs**: `session.automation_summary = {"summary": {...}}` consumed by the final merge
+- **File**: `backend/agent/workflow_analyzer_agent/agents/agent4_automation_summarizer.py`
+- **Execution**: Sequential stage triggered after the parallel agents resolve
 
 #### Technology Stack
 
@@ -133,6 +155,8 @@ WorkflowAnalyzerOrchestrator.analyze_workflow()
     ├─ Run Agent 2 & 3 in parallel
     │  ├─ Agent 2: Assess risk
     │  └─ Agent 3: Analyze automation
+    │
+    ├─ Run Agent 4: Summarize automation roadmap
     │
     └─ Merge results → WorkflowAnalysis
          │
@@ -369,7 +393,8 @@ agentarchitecture/
 │   │   │   ├── agents/
 │   │   │   │   ├── agent1_parser.py          # Workflow parsing
 │   │   │   │   ├── agent2_risk_assessor.py   # Risk assessment
-│   │   │   │   └── agent3_automation_analyzer.py  # Automation analysis
+│   │   │   │   ├── agent3_automation_analyzer.py  # Automation analysis
+│   │   │   │   └── agent4_automation_summarizer.py # Automation summary & roadmap
 │   │   │   ├── orchestrator.py               # Agent orchestration
 │   │   │   ├── config.py                     # Configuration
 │   │   │   └── prompts.py                    # LLM prompts
