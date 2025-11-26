@@ -1,119 +1,106 @@
-# AgentArchitecture
+# Calibrate
 
-A full-stack AI application that analyzes business workflows and recommends automation strategies using multi-agent analysis. It identifies which workflow steps can be automated, which require AI agents, and which need human intervention.
+## Core Concept and Value
 
-## Problem Statement
+Calibrate is a full-stack AI assistant that inspects business workflows, flags which steps can be automated, shows where AI fits, and calls out when humans must remain in the loop, giving teams an honest read on AI limits. The Google Agent Development Kit (ADK) powers this multi-agent system, which combines agent evaluation of stored workflow analyses with a production-ready FastAPI deployment backed by Firestore.
 
-Businesses struggle to systematically analyze their workflows and identify automation opportunities. Key challenges include:
+### Problem Statement
 
-- **Manual Analysis**: No automated way to evaluate workflow steps for automation potential
-- **Risk Blindness**: Difficulty assessing compliance, security, and operational risks
-- **Agent Mapping**: Unclear which agent types (agentic RAG, tool-using, etc.) are needed
-- **Human Approval**: Uncertain which steps require human-in-the-loop (HITL) intervention
-- **Tool Registry**: No structured registry of available agents and tools for automation
+Teams don’t know which tasks AI can handle and overdo the hand-off, leading to:
+- **Blind spots** around automation feasibility, compliance, and HITL risk
+- **Unclear mapping** of step-level needs to agent types vs. humans
+- **No shared registry** of org-approved tools, agents, and integrations
+- **Failed automation rollouts** waste resources on steps AI can’t own end-to-end
 
-## Solution
+### Solution
 
-AgentArchitecture provides an intelligent workflow analysis platform that:
+Calibrate helps teams confidently automate by:
+1. Parsing free-form workflows into structured steps
+2. Scoring automation feasibility and determinism per step
+3. Highlighting compliance/HITL risks with mitigation notes
+4. Reviewing automation potential, risks, and per-step opportunities
+5. Recommending agent types, tools, and registries for deployment
 
-1. **Parses workflows** into discrete, analyzable steps
-2. **Assesses risk** including compliance and HITL requirements
-3. **Scores automation feasibility** on a 0.0-1.0 scale with determinism analysis
-4. **Maps to agent types** appropriate for each step (adk_base, agentic_rag, TOOL, HUMAN)
-5. **Generates org charts** and tool registries for agent deployment
-6. **Surfaces insights** with actionable recommendations for optimization
-7. **Synthesizes automation roadmaps** with quick wins and phased plans through a dedicated summarizer agent
+## Course Concepts Demonstrated
 
-## Architecture
+**Multi-agent system** – WorkflowAnalyzerOrchestrator chains sequential (Parser → Summarizer) and parallel (Risk + Automation) agents powered by Gemini and ADK, with an additional deterministic org-design module triggered post-approval.
 
-### High-Level Overview
+**Agent evaluation** – Each run saves a complete `WorkflowAnalysis` (steps, scores, recommendations) that we replay against golden workflows to compare automation/risk deltas and catch regressions before approving org designs.
 
-```
+**Agent deployment** – FastAPI exposes `/workflows` and `/workflows/{id}/approve`, letting the multi-agent workflow run end-to-end in a production-style REST service backed by Firestore.
+
+Also uses shared session state, ADK tool hooks, and orchestrator tracing/metrics with retries.
+
+## Architecture Overview
+
 ┌─────────────────────────────────────────────────────────────┐
-│                       Frontend (React)                       │
-│  - File upload, dashboards, insights, approvals            │
+│                       Frontend (React)                      │
+│  - File upload, dashboards, insights, approvals             │
 └──────────────────┬──────────────────────────────────────────┘
-                  │
-                  │ REST API
-                  │
+                   │
+                   │ REST API
+                   │
 ┌──────────────────▼──────────────────────────────────────────┐
-│                   Backend (FastAPI)                          │
+│                   Backend (FastAPI)                         │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │         Workflow Analyzer Orchestrator                 │ │
-│  │        ┌──────────────┐                               │ │
-│  │        │ Agent 1:     │                               │ │
-│  │        │ Parser       │                               │ │
-│  │        │ (Sequential) │                               │ │
-│  │        └────┬────┬────┘                               │ │
-│  │             │    │                                    │ │
-│  │  ┌──────────▼┐   ┌▼──────────────┐                   │ │
-│  │  │ Agent 2:  │   │ Agent 3:     │                   │ │
-│  │  │ Risk      │   │ Automation   │                   │ │
-│  │  │ Assessor  │   │ Analyzer     │                   │ │
-│  │  │ (Parallel)│   │ (Parallel)   │                   │ │
-│  │  └───────────┘   └──────────────┘                   │ │
-│  │         │  (risks → session)    │ (automation → session)│ │
-│  │          └────────┬─────────────┘                       │ │
-│  │                   ▼                                    │ │
+│  │        ┌──────────────┐                                │ │
+│  │        │ Agent 1:     │                                │ │
+│  │        │ Parser       │                                │ │
+│  │        │ (Sequential) │                                │ │
+│  │        └────┬────┬────┘                                │ │
+│  │             │    │                                     │ │
+│  │  ┌──────────▼┐   ┌▼──────────────┐                     │ │
+│  │  │ Agent 2:  │   │ Agent 3:      │                     │ │
+│  │  │ Risk      │   │ Automation    │                     │ │
+│  │  │ Assessor  │   │ Analyzer      │                     │ │
+│  │  │ (Parallel)│   │ (Parallel)    │                     │ │
+│  │  └───────────┘   └─────────────-─┘                     │ │
+│  │         │  (risks → session)   │ (automation → session)│ │
+│  │         └────────┬─────────────┘                       │ │
+│  │                  ▼                                     │ │
 │  │          ┌──────────────────────┐                      │ │
 │  │          │ Agent 4: Summarizer  │                      │ │
 │  │          │ (reads session data) │                      │ │
 │  │          │ Quick wins & roadmap │                      │ │
 │  │          └──────────────────────┘                      │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                          │                                   │
-│  ┌────────────────────────▼──────────────────────────────┐ │
-│  │    Organization Design Module                         │ │
-│  │  - AgentOrgChart  - AgentRegistry  - ToolRegistry    │ │
-│  └───────────────────────────────────────────────────────┘ │
+│  │                   │                                    │ │
+│  │                   ▼                                    │ │
+│  │        Human-in-the-loop Approval                      │ │
+│  │      (POST /workflows/{id}/approve)                    │ │
+│  │                   │                                    │ │
+│  └───────────────────▼────────────────────────────────────┘ │
+│                           │                                 │
+│  ┌────────────────────────▼──────────────────────────────┐  │
+│  │    Organization Design Module                         │  │
+│  │  - AgentOrgChart  - AgentRegistry  - ToolRegistry     │  │
+│  └───────────────────────────────────────────────────────┘  │
 └──────────────────┬──────────────────────────────────────────┘
-                  │
-                  │ Persistence
-                  │
-        ┌─────────▼──────────┐
-        │ Firebase/Firestore │
-        │   (Database)       │
-        └────────────────────┘
-```
+                   │
+                   │ Persistence
+                   │
+         ┌─────────▼──────────┐
+         │ Firebase/Firestore │
+         │   (Database)       │
+         └────────────────────┘
 
 ### Backend Architecture
 
-The backend uses a **distributed multi-agent system** with a shared `SessionState` so each agent can write/read intermediate results:
+A distributed multi-agent pipeline shares a `SessionState` so each stage can reuse prior outputs. The `WorkflowAnalyzerOrchestrator` (`backend/agent/workflow_analyzer_agent/orchestrator.py`) coordinates sequential and parallel tasks, retries transient failures, and persists the final `WorkflowAnalysis`.
 
-#### Orchestrator: WorkflowAnalyzerOrchestrator
-- **Coordinates** the sequential/parallel execution plan with asyncio tasks
-- **Provides** a shared `SessionState` object where agents drop their outputs (parsed steps, risks, automation, summary)
-- **Merges** the session data into a `WorkflowAnalysis` DTO and saves it to Firestore when configured
-- **Tracks** tracing/metrics and retries transient agent failures
-- **File**: `backend/agent/workflow_analyzer_agent/orchestrator.py`
+Agent 1: Parser (`agent1_parser.py`)
+Turns natural-language workflows into structured steps with IDs, dependencies, and IO so downstream agents know what to analyze. 
 
-#### Agent 1: Workflow Parser (Sequential)
-- **Purpose**: Extract structured workflow information that seeds every other agent
-- **Inputs**: Natural language workflow description
-- **Outputs**: `session.parsed_steps = {"steps": [...]}` containing IDs, descriptions, dependencies, inputs/outputs
-- **File**: `backend/agent/workflow_analyzer_agent/agents/agent1_parser.py`
-- **Execution**: Sequential first step; downstream agents bail if this fails
+Agent 2: Risk Assessor (`agent2_risk_assessor.py`)
+Reads those steps and writes compliance/security/HITL scores plus mitigation notes to `session.risks`. 
 
-#### Agent 2: Risk Assessor (Parallel)
-- **Purpose**: Evaluate compliance, security, and HITL risks per step
-- **Inputs**: Parsed steps from `session.parsed_steps`
-- **Outputs**: `session.risks = {"risk_assessments": [...]}` with risk levels, confidence, mitigation, optional compliance tool lookups
-- **File**: `backend/agent/workflow_analyzer_agent/agents/agent2_risk_assessor.py`
-- **Execution**: Runs in parallel with Agent 3 once Agent 1 finishes
+Agent 3: Automation Analyzer (`agent3_automation_analyzer.py`)
+Evaluates determinism and automation feasibility per step, recommending agent types and tool hooks in `session.automation`.
 
-#### Agent 3: Automation Analyzer (Parallel)
-- **Purpose**: Determine automation feasibility, determinism, suggested agent types & tool hooks
-- **Inputs**: Parsed steps plus any risk context already written by Agent 2
-- **Outputs**: `session.automation = {"automation_analyses": [...]}` with feasibility scores, determinism, API/tool hints, implementation notes
-- **File**: `backend/agent/workflow_analyzer_agent/agents/agent3_automation_analyzer.py`
-- **Execution**: Parallel with Agent 2; uses tool calls (e.g., API lookup) when needed
+Agent 4: Summarizer (`agent4_automation_summarizer.py`)
+Ingests the whole session to draft quick wins and phased roadmaps.
 
-#### Agent 4: Automation Summarizer (Sequential)
-- **Purpose**: Read the combined session and synthesize an automation roadmap (overall assessment, blockers, quick wins, phased plan)
-- **Inputs**: Parsed steps + risk assessments + automation analyses already stored in the session
-- **Outputs**: `session.automation_summary = {"summary": {...}}` consumed by the final merge
-- **File**: `backend/agent/workflow_analyzer_agent/agents/agent4_automation_summarizer.py`
-- **Execution**: Sequential stage triggered after the parallel agents resolve
+Human triggers approval `POST /workflows/{id}/approve` and the non-agentic org design module (`agent/org_design/service.py`) deterministically produces the `AgentOrgChart`, `AgentRegistry`, and `ToolRegistry`.
 
 #### Technology Stack
 
@@ -128,225 +115,9 @@ The backend uses a **distributed multi-agent system** with a shared `SessionStat
 
 ### Frontend Architecture
 
-- **Framework**: React 19.2.0 (Create React App)
-- **Components**: File upload, step cards, dashboard, insights
-- **State**: React hooks for UI state management
-- **API**: Fetch API for backend communication
-- **Design**: Responsive CSS with color-coded risk visualization
+React 19.2 (CRA) powers the UI, which uses hooks for state, Fetch for API calls, and responsive CSS to highlight risk/automation insights across FileUpload, StepsList/StepCard, Summary, and KeyInsights components.
 
-### Data Flow
-
-```
-User Uploads Workflow
-         │
-         ▼
-Frontend receives file
-         │
-         ▼
-POST /workflows with workflow_text
-         │
-         ▼
-WorkflowAnalyzerOrchestrator.analyze_workflow()
-    │
-    ├─ Run Agent 1: Parse workflow (sequential)
-    │       │
-    │       ▼ Parsed workflow structure
-    │
-    ├─ Run Agent 2 & 3 in parallel
-    │  ├─ Agent 2: Assess risk
-    │  └─ Agent 3: Analyze automation
-    │
-    ├─ Run Agent 4: Summarize automation roadmap
-    │
-    └─ Merge results → WorkflowAnalysis
-         │
-         ▼
-Auto-save to Firestore
-         │
-         ▼
-Return analysis to frontend
-         │
-         ▼
-Display dashboard with insights
-         │
-         ▼
-User approves analysis
-         │
-         ▼
-POST /workflows/{id}/approve
-         │
-         ▼
-Generate AgentOrgChart & Registries
-         │
-         ▼
-Save to Firestore & return
-```
-
-## Setup Instructions
-
-### Backend Setup
-
-#### Prerequisites
-- Python 3.9+
-- pip
-- Google Gemini API key (free from https://aistudio.google.com/app/apikey)
-
-#### Installation
-
-```bash
-# Navigate to project root
-cd agentarchitecture
-
-# Create and activate virtual environment
-python -m venv venv
-
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
-cd backend
-pip install -r requirements.txt
-```
-
-#### Configuration
-
-1. **Get Gemini API Key**:
-   - Visit https://aistudio.google.com/app/apikey
-   - Create new API key
-   - Copy the key
-
-2. **Create `backend/.env` file**:
-   ```bash
-   GOOGLE_API_KEY=your-gemini-api-key-here
-
-   # Optional Firebase configuration
-   FIREBASE_PROJECT_ID=your-firebase-project-id
-   FIREBASE_CREDENTIALS_PATH=./firebase-service-account.json
-   FIREBASE_COLLECTION_WORKFLOWS=workflows
-   ```
-
-3. **(Optional) Setup Firebase**:
-   - Create project at https://console.firebase.google.com
-   - Enable Firestore Database (US region recommended)
-   - Generate service account JSON from Project Settings → Service Accounts
-   - Save as `backend/firebase-service-account.json`
-   - Update `FIREBASE_PROJECT_ID` in `.env`
-
-#### Running the Backend
-
-```bash
-# From backend directory
-cd backend
-
-# Option 1: Direct module execution
-python -m backend
-
-# Option 2: Uvicorn development server (recommended)
-python -m uvicorn backend.api.app:app --reload --host 0.0.0.0 --port 8000
-
-# Option 3: Python interpreter
-python -c "from backend.api.app import run_server; run_server()"
-```
-
-Backend will be available at `http://localhost:8000`
-
-Check health: `curl http://localhost:8000/health`
-
-### Frontend Setup
-
-#### Prerequisites
-- Node.js 16+
-- npm 7+
-
-#### Installation
-
-```bash
-# Navigate to frontend directory
-cd agentarchitecture/frontend
-
-# Install dependencies
-npm install
-```
-
-#### Configuration
-
-The frontend is pre-configured to communicate with the backend at `http://localhost:8000`. If you need to change this:
-
-Edit `frontend/src/App.js` line 22:
-```javascript
-const response = await fetch('http://localhost:8000/workflows', {
-```
-
-#### Running the Frontend
-
-```bash
-# From frontend directory
-cd frontend
-
-# Development server (opens browser at localhost:3000)
-npm start
-
-# Production build
-npm run build
-
-# Run tests
-npm test
-```
-
-### Full Stack Startup
-
-#### Terminal 1: Backend
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate  # Windows: or source venv/bin/activate on macOS/Linux
-pip install -r requirements.txt
-python -m uvicorn backend.api.app:app --reload --host 0.0.0.0 --port 8000
-```
-
-#### Terminal 2: Frontend
-```bash
-cd frontend
-npm install
-npm start
-```
-
-Then open: http://localhost:3000
-
-## API Endpoints
-
-### Workflow Analysis
-
-**POST** `/workflows` - Analyze a workflow
-```json
-{
-  "workflow_text": "Step 1: Parse customer request...",
-  "workflow_name": "Customer Onboarding"
-}
-```
-
-Response: `WorkflowAnalysis` object with steps, summary, insights
-
-**GET** `/workflows` - List all workflows
-- Query params: `skip=0&limit=10&status=COMPLETED`
-
-**GET** `/workflows/{workflow_id}` - Retrieve specific workflow
-
-**DELETE** `/workflows/{workflow_id}` - Delete a workflow
-
-**POST** `/workflows/{workflow_id}/approve` - Approve workflow and generate org chart
-
-**GET** `/workflows/{workflow_id}/approval-status` - Check approval status
-
-### System Health
-
-**GET** `/health` - Health check
-
-**GET** `/` - API information
-
-## Key Metrics
+## Scoring System
 
 ### Determinism Score (0.0 - 1.0)
 Indicates how rule-based vs. ambiguous a workflow step is:
@@ -367,21 +138,75 @@ Likelihood that a step can be successfully automated:
 - **HIGH**: Significant risk, requires careful planning
 - **CRITICAL**: Compliance/legal risk, requires HITL
 
+## Setup Instructions
+
+### Backend (run first)
+
+**Prerequisites**: Python 3.9+, pip, and a Google Gemini API key from https://aistudio.google.com/app/apikey.
+
+```bash
+cd agentarchitecture/backend
+python -m venv venv
+source venv/bin/activate       # macOS/Linux
+venv\Scripts\activate          # Windows PowerShell/CMD
+pip install -r requirements.txt
+```
+
+Create `backend/.env` with your Gemini key and optional Firebase settings:
+
+```
+GOOGLE_API_KEY=your-gemini-api-key-here
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_CREDENTIALS_PATH=./firebase-service-account.json
+FIREBASE_COLLECTION_WORKFLOWS=workflows
+```
+
+Provision Firebase only if you need persistence: create a project, enable Firestore, download a service account JSON, and update the env values accordingly.
+
+Start the API:
+```bash
+python -m uvicorn backend.api.app:app --reload --host 0.0.0.0 --port 8000
+```
+Health check: `curl http://localhost:8000/health`
+
+### Frontend
+
+**Prerequisites**: Node.js 16+ and npm 7+. The default API base is `http://localhost:8000`; update `frontend/src/App.js` if you change it.
+
+```bash
+cd agentarchitecture/frontend
+npm install
+npm start   # opens http://localhost:3000
+```
+
+### Verify
+
+With the backend running in one terminal and the frontend in another, visit `http://localhost:3000`. Upload a workflow and confirm the app displays analysis returned from `http://localhost:8000`.
+
+## API Endpoints
+
+Primary workflow call:
+```http
+POST /workflows
+{
+  "workflow_text": "Step 1: Parse customer request...",
+  "workflow_name": "Customer Onboarding"
+}
+```
+Returns a `WorkflowAnalysis` containing parsed steps, risk notes, automation scores, and a summary.
+
+Other endpoints:
+- `GET /workflows` – List workflows (`skip`, `limit`, `status` filters)
+- `GET /workflows/{workflow_id}` – Fetch a single workflow
+- `DELETE /workflows/{workflow_id}` – Remove a workflow
+- `POST /workflows/{workflow_id}/approve` – Trigger org-chart generation
+- `GET /workflows/{workflow_id}/approval-status` – Check HITL approval state
+- `GET /health` – Service health probe
+- `GET /` – API metadata
+
 ## Key Components
 
-### Backend Schemas
-- **WorkflowStep**: Individual step with risk, automation, and agent data
-- **WorkflowAnalysis**: Complete analysis with summary and insights
-- **AgentOrgChart**: Hierarchical structure of agents
-- **AgentRegistry**: Catalog of available agents and capabilities
-- **ToolRegistry**: Available tools and APIs for automation
-
-### Frontend Components
-- **FileUpload**: Drag-and-drop workflow file upload
-- **StepsList**: Grid displaying all analyzed workflow steps
-- **StepCard**: Individual step with risk badge, automation score, agent type
-- **SummaryContainer**: Dashboard metrics and statistics
-- **KeyInsights**: Actionable insights with priority levels
+Backend schemas cover `WorkflowStep`, `WorkflowAnalysis`, and the org-design artifacts (`AgentOrgChart`, `AgentRegistry`, `ToolRegistry`). On the frontend, the primary components are FileUpload, StepsList/StepCard, SummaryContainer, and KeyInsights for surfacing insights.
 
 ## Project Structure
 
@@ -423,125 +248,20 @@ agentarchitecture/
 └── README.md                                 # This file
 ```
 
-## Decision Rationale: Backend Architecture
+## Technical Choices
 
-### Multi-Agent Distributed System
-**Why**: Workflow analysis has distinct phases (parsing, risk assessment, automation analysis) that can be parallelized after parsing.
-
-**Benefit**: Agent 2 and 3 run simultaneously after Agent 1 completes, reducing total analysis time while maintaining dependency integrity.
-
-### Google Gemini 2.0 Flash
-**Why**: Latest frontier model optimized for speed and reasoning.
-
-**Benefit**: Fast response times for interactive web application; excellent reasoning for complex workflow analysis.
-
-### FastAPI
-**Why**: Modern async Python framework with automatic OpenAPI documentation.
-
-**Benefit**: Native async/await support for concurrent agent execution; clean, intuitive API design.
-
-### Firebase/Firestore
-**Why**: Serverless NoSQL database with real-time capabilities and built-in security.
-
-**Benefit**: No database server setup; automatic scaling; real-time updates potential; JSON-native storage for workflow data.
-
-### Pydantic Models
-**Why**: Strong data validation at API boundaries and agent outputs.
-
-**Benefit**: Type safety; automatic validation; clear schema documentation; prevents invalid data propagation.
-
-## Example Workflow Analysis
-
-**Input**:
-```
-"Customer request comes in, we parse it, check inventory with our database API,
-if inventory is available we create an order, if not we notify customer with email"
-```
-
-**Output Summary**:
-- **Total Steps**: 4 (parse, check inventory, create order, notify)
-- **Automatable**: 3 of 4 (75%)
-- **Agent Types**: 1 adk_base, 2 agentic_rag, 1 HUMAN
-- **Risks**: 1 HIGH (inventory API dependency), 1 MEDIUM (customer notification)
-- **Automation Potential**: 0.82
-
-**Agent Assignments**:
-- **Parse request**: agentic_rag (NLP required) - 0.9 automation
-- **Check inventory**: adk_base (API call) - 1.0 automation
-- **Create order**: adk_base (deterministic) - 0.95 automation
-- **Notify customer**: HUMAN (requires judgment on tone) - 0.4 automation
+We opted for a multi-agent design so parsing happens once and risk/automation analysis run in parallel, all coordinated through FastAPI’s async stack. Google Gemini 2.0 Flash provides fast reasoning for each agent, while Pydantic schemas enforce clean inputs/outputs before data is saved. Firestore supplies serverless persistence that mirrors the JSON objects our agents produce, keeping deployment lightweight.
 
 ## Troubleshooting
 
-### Backend Issues
-
-**Port already in use**:
-```bash
-# Change port
-python -m uvicorn backend.api.app:app --reload --port 8001
-```
-
-**Google API key invalid**:
-- Verify key in `.env` file
-- Check API is enabled in Google AI Studio
-- Ensure no extra whitespace in key
-
-**Firestore connection errors**:
-- Verify credentials file path
-- Check Firebase project ID
-- Ensure Firestore database is created
-
-### Frontend Issues
-
-**Cannot connect to backend**:
-- Verify backend is running on port 8000
-- Check URL in `frontend/src/App.js`
-- Browser console for CORS errors
-
-**npm install fails**:
-```bash
-npm cache clean --force
-rm package-lock.json
-npm install
-```
-
-## Development
-
-### Running Tests
-
-```bash
-# Backend unit tests
-cd backend
-pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Building for Production
-
-```bash
-# Frontend
-cd frontend
-npm run build
-
-# Backend can be deployed as-is with ASGI server:
-# Use gunicorn, Uvicorn, or cloud platform (Cloud Run, App Engine, etc.)
-```
+- **Backend**: If port 8000 is busy, rerun Uvicorn with `--port 8001`. Invalid Gemini keys usually stem from typos in `backend/.env` or the API not being enabled in Google AI Studio. Firestore errors typically mean the service-account path or project ID doesn’t match your Firebase project, or Firestore hasn’t been initialized.
+- **Frontend**: Connection issues are almost always a backend that isn’t running on `http://localhost:8000` or a stale URL in `frontend/src/App.js`. When `npm install` fails, clear the cache (`npm cache clean --force`), delete `package-lock.json`, and reinstall.
 
 ## License
 
-[Add your license here]
+License pending selection.
 
 ## Contributors
 
-[Add contributors here]
-
-## Resources
-
-- [Google Gemini API Docs](https://ai.google.dev/)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [React Documentation](https://react.dev/)
-- [Google Agent Development Kit](https://cloud.google.com/docs/agent-development-kit)
+Lisa Gu
+Calvin Cheng
