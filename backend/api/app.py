@@ -8,6 +8,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+# Load environment variables BEFORE any other imports
+load_dotenv()
+
 # Add backend to path to allow relative imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -28,8 +31,13 @@ async def lifespan(app: FastAPI):
         default_creds_path = backend_dir / "firebase-service-account.json"
 
         firebase_creds_path = os.getenv(
-            "FIREBASE_CREDENTIALS_PATH", default_creds_path
+            "FIREBASE_CREDENTIALS_PATH", str(default_creds_path)
         )
+
+        # If path is relative, make it absolute
+        if not os.path.isabs(firebase_creds_path):
+            firebase_creds_path = str(backend_dir / firebase_creds_path)
+
         FirebaseClient.initialize(firebase_creds_path)
         print("✓ Firebase initialized on startup")
     except Exception as e:

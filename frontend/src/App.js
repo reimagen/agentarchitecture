@@ -8,7 +8,7 @@ import AnalyzedWorkflowsList from './components/AnalyzedWorkflowsList';
 import Approval from './components/workflow-actions/Approval';
 import OrgGenerationCard from './components/workflow-actions/OrgGenerationCard';
 import { prepareWorkflowBody } from './utils/fileProcessor';
-import { queryAgentEngine, getAccessToken, AGENT_ENGINE_CONFIG_EXPORT } from './services/agentEngineService';
+import { queryAgentEngine, getAccessToken } from './services/agentEngineService';
 
 const NEW_WORKFLOW_ID = '__new_workflow__';
 const USE_AGENT_ENGINE = process.env.REACT_APP_USE_AGENT_ENGINE === 'true';

@@ -1,0 +1,29 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm ci",
+  "env": {
+    "REACT_APP_USE_AGENT_ENGINE": "@react_app_use_agent_engine",
+    "REACT_APP_GOOGLE_CLIENT_ID": "@react_app_google_client_id",
+    "REACT_APP_GCP_PROJECT_ID": "@react_app_gcp_project_id",
+    "REACT_APP_AGENT_ENGINE_ID": "@react_app_agent_engine_id",
+    "REACT_APP_API_BASE_URL": "@react_app_api_base_url"
+  },
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}

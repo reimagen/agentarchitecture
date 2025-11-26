@@ -1,0 +1,16 @@
+.git
+.gitignore
+README.md
+SETUP.md
+AGENT_ENGINE_INTEGRATION.md
+node_modules
+npm-debug.log
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+coverage
+docs
+src/**/*.test.js
+src/setupTests.js

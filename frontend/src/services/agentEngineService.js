@@ -17,8 +17,6 @@ const AGENT_ENGINE_CONFIG = {
  * @returns {Promise<Object>} Analysis result from the agent
  */
 export async function queryAgentEngine(workflowText, accessToken) {
-  const resourceName = `projects/${AGENT_ENGINE_CONFIG.projectId}/locations/${AGENT_ENGINE_CONFIG.location}/reasoningEngines/${AGENT_ENGINE_CONFIG.agentId}`;
-
   const url = `${AGENT_ENGINE_CONFIG.endpoint}/projects/${AGENT_ENGINE_CONFIG.projectId}/locations/${AGENT_ENGINE_CONFIG.location}/reasoningEngines/${AGENT_ENGINE_CONFIG.agentId}:streamQuery`;
 
   try {
