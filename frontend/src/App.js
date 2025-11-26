@@ -71,8 +71,6 @@ function App() {
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(NEW_WORKFLOW_ID);
   const [isApproving, setIsApproving] = useState(false); // State for approval button
   const [isGeneratingOrgAssets, setIsGeneratingOrgAssets] = useState(false); // State for org asset generation
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditingWorkflowName, setIsEditingWorkflowName] = useState(false);
   const [workflowNameInput, setWorkflowNameInput] = useState('');
   const [isRenamingWorkflow, setIsRenamingWorkflow] = useState(false);
@@ -139,7 +137,6 @@ function App() {
       );
       setAnalysisResult(data);
       setSelectedWorkflowId(data.workflow_id);
-      setShowDeleteConfirm(false);
       setIsEditingWorkflowName(false);
       fetchWorkflowList();
     } catch (err) {
@@ -180,7 +177,6 @@ function App() {
         workflowName: data.workflowName ?? null,
       }));
       setSelectedWorkflowId(workflowId);
-      setShowDeleteConfirm(false);
       setIsEditingWorkflowName(false);
     } catch (err) {
       setError(err.message);
@@ -193,9 +189,8 @@ function App() {
   const handleSelectNewWorkflow = () => {
     setSelectedWorkflowId(NEW_WORKFLOW_ID);
     setError(null);
-    setShowDeleteConfirm(false);
-     setIsEditingWorkflowName(false);
-     setWorkflowNameInput('');
+    setIsEditingWorkflowName(false);
+    setWorkflowNameInput('');
   };
 
   const handleApproveWorkflow = async () => {
@@ -231,46 +226,6 @@ function App() {
     } finally {
       setIsApproving(false);
       setIsGeneratingOrgAssets(false); // Reset generating state
-    }
-  };
-
-  const handleStartDelete = () => {
-    if (!analysisResult?.workflow_id) {
-      return;
-    }
-    setShowDeleteConfirm(true);
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteConfirm(false);
-  };
-
-  const handleDeleteWorkflow = async () => {
-    if (!selectedWorkflowId || selectedWorkflowId === NEW_WORKFLOW_ID) return;
-
-    setIsDeleting(true);
-    setError(null);
-
-    try {
-      await fetchJsonWithRetry(
-        `${WORKFLOW_API_BASE}/${selectedWorkflowId}?hard_delete=true`,
-        {
-          method: 'DELETE',
-        },
-        { fallbackErrorMessage: 'Failed to delete workflow', retries: 1, retryDelay: 400 }
-      );
-
-      setAnalysisResult(null);
-      setSelectedWorkflowId(NEW_WORKFLOW_ID);
-      setShowDeleteConfirm(false);
-      setIsEditingWorkflowName(false);
-      setWorkflowNameInput('');
-      fetchWorkflowList();
-    } catch (err) {
-      setError(err.message);
-      addToast(err.message);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -424,7 +379,7 @@ function App() {
               <div className="card card--spacious upload-panel">
                 <h2 className="card-title">Analyze New Workflow</h2>
                 <p>Upload a workflow file to analyze its automation potential.</p>
-                <p>Your analysis will appear in the left pane when ready.</p>
+                <p>Your analysis will appear in the left pane when ready, this may take up to 1 minute.</p>
                 {error && <div className="error-message">{error}</div>}
                 <FileUpload onFileUpload={handleFileUpload} loading={loading} />
               </div>
@@ -524,43 +479,6 @@ function App() {
                           />
                         </div>
                       )}
-                      <div className="card card--compact delete-workflow-section">
-                        {showDeleteConfirm ? (
-                          <div className="delete-confirm-card">
-                            <p className="delete-confirm-text">
-                              Are you sure you want to delete this workflow? This action cannot be undone.
-                            </p>
-                            <div className="delete-confirm-actions">
-                              <button
-                                type="button"
-                                className="btn btn--neutral"
-                                onClick={handleCancelDelete}
-                                disabled={isDeleting}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn--danger"
-                                onClick={handleDeleteWorkflow}
-                                disabled={isDeleting}
-                              >
-                                {isDeleting ? 'Deleting…' : 'Delete'}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn--danger delete-workflow-button"
-                            onClick={handleStartDelete}
-                            disabled={isDeleting || !analysisResult?.workflow_id}
-                          >
-                            <span className="delete-icon" aria-hidden="true">🗑️</span>
-                            Delete Workflow
-                          </button>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>

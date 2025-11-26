@@ -242,10 +242,6 @@
   justify-content: center;
 }
 
-.delete-workflow-section {
-  margin-top: 20px;
-}
-
 .btn {
   border: none;
   border-radius: 6px;
@@ -292,45 +288,6 @@
 .btn:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-}
-
-.delete-workflow-button {
-  width: 100%;
-}
-
-.delete-icon {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.delete-confirm-card {
-  border: 1px solid #f5c6cb;
-  border-radius: 8px;
-  padding: 16px;
-  background-color: #fff5f5;
-}
-
-.delete-confirm-text {
-  margin: 0 0 12px 0;
-  color: #721c24;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.delete-confirm-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.delete-cancel-button {
-  background-color: #e2e6ea;
-  color: #333;
-}
-
-.delete-confirm-button {
-  background-color: #c82333;
-  color: white;
 }
 
 .back-to-top {

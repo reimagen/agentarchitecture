@@ -229,34 +229,3 @@ async def update_workflow_name(workflow_id: str, request: WorkflowNameUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update workflow name: {str(e)}")
 
-
-@router.delete("/{workflow_id}")
-async def delete_workflow(workflow_id: str, hard_delete: bool = False):
-    """
-    Delete a workflow (soft or hard delete).
-
-    Query parameters:
-    - hard_delete: If true, permanently delete. If false (default), soft delete.
-
-    Returns:
-    {
-        "message": "Workflow deleted successfully",
-        "workflow_id": "wf_a1b2c3d4"
-    }
-    """
-    try:
-        repository = get_repository()
-        success = repository.delete_workflow(workflow_id, soft_delete=not hard_delete)
-
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to delete workflow")
-
-        return {
-            "message": "Workflow deleted successfully",
-            "workflow_id": workflow_id,
-        }
-
-    except WorkflowNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete workflow: {str(e)}")
