@@ -265,5 +265,5 @@ License pending selection.
 
 ## Contributors
 
-Lisa Gu
 Calvin Cheng
+Lisa Gu
