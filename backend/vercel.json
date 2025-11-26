@@ -1,9 +1,17 @@
 {
-  "buildCommand": "pip install -r requirements.txt",
-  "outputDirectory": ".",
-  "functions": {
-    "api/app.py": {
-      "runtime": "python3.9"
+  "builds": [
+    {
+      "src": "api/app.py",
+      "use": "@vercel/python"
     }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/app.py"
+    }
+  ],
+  "env": {
+    "PYTHONUNBUFFERED": "1"
   }
 }
