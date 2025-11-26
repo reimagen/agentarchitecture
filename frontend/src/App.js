@@ -5,11 +5,13 @@ import StepsList from './components/workflow-display/StepsList';
 import SummaryContainer from './components/workflow-display/SummaryContainer';
 import KeyInsights from './components/workflow-display/KeyInsights';
 import AnalyzedWorkflowsList from './components/AnalyzedWorkflowsList';
-import Approval from './components/workflow-actions/Approval'; // Import Approval component
-import OrgGenerationCard from './components/workflow-actions/OrgGenerationCard'; // Import OrgGenerationCard component
+import Approval from './components/workflow-actions/Approval';
+import OrgGenerationCard from './components/workflow-actions/OrgGenerationCard';
 import { prepareWorkflowBody } from './utils/fileProcessor';
+import { queryAgentEngine, getAccessToken, AGENT_ENGINE_CONFIG_EXPORT } from './services/agentEngineService';
 
 const NEW_WORKFLOW_ID = '__new_workflow__';
+const USE_AGENT_ENGINE = process.env.REACT_APP_USE_AGENT_ENGINE === 'true';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -122,23 +124,52 @@ function App() {
     setError(null);
 
     try {
-      const body = await prepareWorkflowBody(file);
+      if (USE_AGENT_ENGINE) {
+        // Use deployed Agent Engine
+        const workflowText = await file.text();
+        const accessToken = getAccessToken();
 
-      const data = await fetchJsonWithRetry(
-        WORKFLOW_API_BASE,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        if (!accessToken && process.env.NODE_ENV === 'production') {
+          throw new Error('Authentication required. Please sign in with Google.');
+        }
+
+        const agentResult = await queryAgentEngine(workflowText, accessToken);
+
+        // Transform Agent Engine response to match frontend expectations
+        const data = {
+          workflow_id: `agent-${Date.now()}`,
+          analysis: agentResult.analysis || agentResult,
+          approvalStatus: 'PENDING',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          workflowName: null,
+          originalText: workflowText,
+        };
+
+        setAnalysisResult(data);
+        setSelectedWorkflowId(data.workflow_id);
+      } else {
+        // Use local backend (default)
+        const body = await prepareWorkflowBody(file);
+
+        const data = await fetchJsonWithRetry(
+          WORKFLOW_API_BASE,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
           },
-          body: JSON.stringify(body),
-        },
-        { fallbackErrorMessage: 'Failed to analyze workflow', retries: 1, retryDelay: 500 }
-      );
-      setAnalysisResult(data);
-      setSelectedWorkflowId(data.workflow_id);
+          { fallbackErrorMessage: 'Failed to analyze workflow', retries: 1, retryDelay: 500 }
+        );
+        setAnalysisResult(data);
+        setSelectedWorkflowId(data.workflow_id);
+        fetchWorkflowList();
+      }
+
+      setShowDeleteConfirm(false);
       setIsEditingWorkflowName(false);
-      fetchWorkflowList();
     } catch (err) {
       setError(err.message);
       addToast(err.message);
