@@ -33,6 +33,7 @@ Also uses shared session state, ADK tool hooks, and orchestrator tracing/metrics
 
 ## Architecture Overview
 
+```
 ┌─────────────────────────────────────────────────────────────┐
 │                       Frontend (React)                      │
 │  - File upload, dashboards, insights, approvals             │
@@ -55,7 +56,7 @@ Also uses shared session state, ADK tool hooks, and orchestrator tracing/metrics
 │  │  │ Risk      │   │ Automation    │                     │ │
 │  │  │ Assessor  │   │ Analyzer      │                     │ │
 │  │  │ (Parallel)│   │ (Parallel)    │                     │ │
-│  │  └───────────┘   └─────────────-─┘                     │ │
+│  │  └───────────┘   └──────────────┘                     │ │
 │  │         │  (risks → session)   │ (automation → session)│ │
 │  │         └────────┬─────────────┘                       │ │
 │  │                  ▼                                     │ │
@@ -83,6 +84,7 @@ Also uses shared session state, ADK tool hooks, and orchestrator tracing/metrics
          │ Firebase/Firestore │
          │   (Database)       │
          └────────────────────┘
+```
 
 ### Backend Architecture
 
