@@ -368,43 +368,6 @@ class WorkflowRepository:
         except Exception as e:
             raise FirestoreError(f"Failed to retrieve workflow: {e}")
 
-    def delete_workflow(self, workflow_id: str, soft_delete: bool = True) -> bool:
-        """
-        Delete a workflow (soft or hard delete).
-
-        Args:
-            workflow_id: Unique workflow identifier
-            soft_delete: If True, soft delete (set deletedAt). If False, hard delete.
-
-        Returns:
-            True if deleted successfully
-
-        Raises:
-            WorkflowNotFoundError: If workflow doesn't exist
-            FirestoreError: If Firestore operation fails
-        """
-        try:
-            doc_ref = self.db.collection(self.collection_name).document(workflow_id)
-            doc = doc_ref.get()
-
-            if not doc.exists:
-                raise WorkflowNotFoundError(f"Workflow {workflow_id} not found")
-
-            if soft_delete:
-                # Soft delete: set deletedAt timestamp
-                now = datetime.utcnow().isoformat() + "Z"
-                doc_ref.update({"deletedAt": now})
-            else:
-                # Hard delete: remove document
-                doc_ref.delete()
-
-            return True
-
-        except WorkflowNotFoundError:
-            raise
-        except Exception as e:
-            raise FirestoreError(f"Failed to delete workflow: {e}")
-
     def update_workflow_name(self, workflow_id: str, workflow_name: str) -> Dict[str, Any]:
         """Update the user-friendly workflow name."""
         sanitized_name = (workflow_name or "").strip()
