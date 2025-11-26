@@ -168,7 +168,6 @@ function App() {
         fetchWorkflowList();
       }
 
-      setShowDeleteConfirm(false);
       setIsEditingWorkflowName(false);
     } catch (err) {
       setError(err.message);
