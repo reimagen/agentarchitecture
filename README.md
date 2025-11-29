@@ -261,7 +261,7 @@ We opted for a multi-agent design so parsing happens once and risk/automation an
 
 ## License
 
-License pending selection.
+Licensed under CC BY 4.0.
 
 ## Contributors
 
